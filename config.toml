@@ -62,7 +62,7 @@ platforms = ["youtube"]     # what "Post everywhere" sends to; add "tiktok", "in
 outbox = "outbox"           # finished clips + caption text are also copied here
 default_hashtags = "#gta6 #gtavi #gaming"
 tool_credit = true          # adds one line to each video description crediting this free tool. Set false to remove it.
-tool_credit_text = "Clipped with stream-clipper (free, open source): github.com/taarruunnnn/stream-clipper"
+tool_credit_text = "Clipped with gta6-clipper (free, open source): github.com/taarruunnnn/gta6-clipper"
 
 [youtube]
 language = "en"

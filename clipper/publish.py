@@ -21,7 +21,7 @@ def post_text(clip):
     parts.append(clip.get("hashtags", "").strip())
     P = cfg()["publish"]
     if P.get("tool_credit", True):   # a one-line thank-you to the project; set tool_credit = false to leave it out
-        parts.append(P.get("tool_credit_text", "Clipped with stream-clipper (free, open source): github.com/taarruunnnn/stream-clipper"))
+        parts.append(P.get("tool_credit_text", "Clipped with gta6-clipper (free, open source): github.com/taarruunnnn/gta6-clipper"))
     return "\n\n".join(p for p in parts if p)
 
 

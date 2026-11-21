@@ -1,15 +1,15 @@
 ---
-name: stream-clipper
-description: Run a short-form clips channel from game streams with the stream-clipper project. Use when the user wants to find the best moments in a Twitch or YouTube stream or VOD, cut and edit vertical clips (hook, captions, narrator), research what people search for a game, post Shorts to YouTube, or run the whole thing hands-off. Triggers include "clip this stream", "find moments in this VOD", "make shorts from", "set up a clips channel", "what are people searching for <game>", "start the clipper".
+name: gta6-clipper
+description: Run a short-form clips channel from game streams with the gta6-clipper project. Use when the user wants to find the best moments in a Twitch or YouTube stream or VOD, cut and edit vertical clips (hook, captions, narrator), research what people search for a game, post Shorts to YouTube, or run the whole thing hands-off. Triggers include "clip this stream", "find moments in this VOD", "make shorts from", "set up a clips channel", "what are people searching for <game>", "start the clipper".
 ---
 
-# stream-clipper
+# gta6-clipper
 
 A local pipeline: discover → score → cut → judge → edit → post → learn. You drive it through `python -m clipper <command>` inside the project folder.
 
 ## Before anything else
 
-1. Find the project. If the current folder has `clipper/` and `config.toml`, use it. Otherwise ask whether to clone `https://github.com/taarruunnnn/stream-clipper`.
+1. Find the project. If the current folder has `clipper/` and `config.toml`, use it. Otherwise ask whether to clone `https://github.com/taarruunnnn/gta6-clipper`.
 2. Check the environment once per session:
    - `python -m clipper --help` works (if not: create a virtual environment and `pip install -r requirements.txt`)
    - `ffmpeg -version`

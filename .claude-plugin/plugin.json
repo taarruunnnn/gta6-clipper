@@ -1,11 +1,11 @@
 {
-  "name": "stream-clipper",
-  "displayName": "Stream Clipper",
+  "name": "gta6-clipper",
+  "displayName": "GTA 6 Clipper",
   "version": "0.1.0",
   "description": "Find the best moments in game streams, edit them into vertical Shorts, and post them. Runs locally; nothing is posted publicly without your say.",
   "author": { "name": "taarruunnnn", "url": "https://github.com/taarruunnnn" },
-  "repository": "https://github.com/taarruunnnn/stream-clipper",
+  "repository": "https://github.com/taarruunnnn/gta6-clipper",
   "license": "MIT",
-  "keywords": ["clipping", "shorts", "twitch", "youtube", "video", "gaming"],
+  "keywords": ["gta6", "clipper", "clipping", "shorts", "twitch", "youtube", "video", "gaming"],
   "skills": ["./skills/"]
 }

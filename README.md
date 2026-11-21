@@ -1,12 +1,12 @@
 <div align="center">
 
-<img src="docs/logo.png" width="170" alt="stream-clipper logo">
+<img src="docs/logo.png" width="170" alt="GTA 6 Clipper logo">
 
-<h1 align="center">stream-clipper</h1>
+<h1 align="center">GTA 6 Clipper</h1>
 
 <p align="center"><b>Streamers make the moments.<br>This finds them, edits them and posts them while you sleep.</b></p>
 
-<p align="center"><b>The open-source GTA 6 clipper</b> · a Claude Code skill · works with OpenAI Codex · YouTube Shorts automation for any game</p>
+<p align="center"><b>The open-source GTA 6 clipper</b> · a Claude Code skill · works with OpenAI Codex · YouTube Shorts automation · built for GTA 6, works for any game</p>
 
 <p align="center">A hands-off clip factory for game streams. It watches the biggest streams of a game, catches the moments viewers react to, turns them into vertical Shorts with a hook, animated captions and a narrator, writes titles from real search data, and uploads them to your YouTube channel. Everything runs on your own computer.</p>
 
@@ -20,7 +20,7 @@
 <img src="https://img.shields.io/badge/tested_on-macOS_Apple_Silicon-FFD400?labelColor=111111" alt="tested on macOS Apple Silicon">
 <img src="https://img.shields.io/badge/python-3.10%2B-FFD400?labelColor=111111" alt="python 3.10+">
 <img src="https://img.shields.io/badge/license-MIT-FFD400?labelColor=111111" alt="MIT license">
-<a href="https://github.com/taarruunnnn/stream-clipper/stargazers"><img src="https://img.shields.io/github/stars/taarruunnnn/stream-clipper?style=flat&color=FFD400&labelColor=111111" alt="GitHub stars"></a>
+<a href="https://github.com/taarruunnnn/gta6-clipper/stargazers"><img src="https://img.shields.io/github/stars/taarruunnnn/gta6-clipper?style=flat&color=FFD400&labelColor=111111" alt="GitHub stars"></a>
 </p>
 
 <p align="center"><sub>Unofficial fan project. Not affiliated with Rockstar Games, Take-Two, Twitch, YouTube or Anthropic.</sub></p>
@@ -39,11 +39,11 @@
 </div>
 
 ```
-/plugin marketplace add taarruunnnn/stream-clipper
-/plugin install stream-clipper@stream-clipper
+/plugin marketplace add taarruunnnn/gta6-clipper
+/plugin install gta6-clipper@gta6-clipper
 ```
 
-Two lines in Claude Code, then say: *"Use stream-clipper to set up a clips channel for GTA 6 and show me today's best moments."*
+Two lines in Claude Code, then say: *"Use gta6-clipper to set up a clips channel for GTA 6 and show me today's best moments."*
 
 > ⭐ **If this helps you, please star the repo.** It is how other people find it. Bugs, ideas and pull requests are all welcome: see [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -83,8 +83,8 @@ brew install python ffmpeg node
 **3. Download this project:**
 
 ```bash
-git clone https://github.com/taarruunnnn/stream-clipper
-cd stream-clipper
+git clone https://github.com/taarruunnnn/gta6-clipper
+cd gta6-clipper
 ```
 
 **4. Install its parts:**
@@ -104,7 +104,7 @@ python -m clipper ui
 
 Your browser opens at `http://127.0.0.1:8765`. That page is your control room.
 
-> Every time you come back later, run `cd stream-clipper` and `source .venv/bin/activate` first.
+> Every time you come back later, run `cd gta6-clipper` and `source .venv/bin/activate` first.
 
 ## Your first clip
 
@@ -147,7 +147,7 @@ This is the fiddliest part, and you only do it once. It is free and allows 100 u
 1. Go to [console.cloud.google.com](https://console.cloud.google.com), create a project, and enable **YouTube Data API v3**.
 2. Open **Google Auth Platform**, choose **External**, and add your own Google account as a **test user**.
 3. Under **Clients**, create a client of type **Desktop app** and download its JSON file.
-4. Save that file in the `stream-clipper` folder as `client_secret.json`.
+4. Save that file in the `gta6-clipper` folder as `client_secret.json`.
 5. Connect your channel:
    ```bash
    python -m clipper youtube-login
@@ -212,9 +212,9 @@ The loop renders quick previews in the classic style and only uses motion for th
 
 **Claude Code**: the two `/plugin` lines at the top install a skill. After that, just ask in plain words: *"clip this stream"*, *"what are people searching for GTA 6"*, *"start the clipper"*.
 
-**Claude apps**: zip the `skills/stream-clipper` folder and upload it as a skill.
+**Claude apps**: zip the `skills/gta6-clipper` folder and upload it as a skill.
 
-**ChatGPT**: the browser version cannot run programs on your computer, so it can only guide you. Paste the contents of [`skills/stream-clipper/SKILL.md`](skills/stream-clipper/SKILL.md) into a project or custom GPT as instructions. OpenAI's **Codex** command-line agent can run the project itself; it reads [`AGENTS.md`](AGENTS.md).
+**ChatGPT**: the browser version cannot run programs on your computer, so it can only guide you. Paste the contents of [`skills/gta6-clipper/SKILL.md`](skills/gta6-clipper/SKILL.md) into a project or custom GPT as instructions. OpenAI's **Codex** command-line agent can run the project itself; it reads [`AGENTS.md`](AGENTS.md).
 
 ## How it works
 
@@ -246,7 +246,7 @@ For a long stream it never downloads the whole video. It scores every second fro
 
 **Why were most of my clips rejected?** That is normal. The judge keeps roughly one clip in eight to ten. Lower `min_score` in the config if you want more volume and accept weaker clips.
 
-**Why is there a line about stream-clipper in my video descriptions?** It is a small credit that keeps this free project discoverable. One setting turns it off: `tool_credit = false`.
+**Why is there a line about gta6-clipper in my video descriptions?** It is a small credit that keeps this free project discoverable. One setting turns it off: `tool_credit = false`.
 
 **Can I use my own voice or style?** Yes. Colours, fonts, the narrator voice, sound effects and layout are all settings in `config.toml`.
 
@@ -282,33 +282,33 @@ This tool is free and always will be. If it earns you views, the best thank-you 
 **1. Leave the credit line on (it is already on).** Every video description ends with one line:
 
 ```
-Clipped with stream-clipper (free, open source): github.com/taarruunnnn/stream-clipper
+Clipped with gta6-clipper (free, open source): github.com/taarruunnnn/gta6-clipper
 ```
 
 It costs you nothing and it is how the next creator finds the tool. To remove it, set `tool_credit = false` under `[publish]` in `config.local.toml`. No hard feelings.
 
 **2. Mention it once.** Copy any of these into a video, a community post, or your channel's About page:
 
-> My clips are made with stream-clipper, a free open-source tool that finds and edits the best stream moments automatically: github.com/taarruunnnn/stream-clipper
+> My clips are made with gta6-clipper, a free open-source tool that finds and edits the best stream moments automatically: github.com/taarruunnnn/gta6-clipper
 
-> How I make these clips: stream-clipper, free on GitHub. Link in the description.
+> How I make these clips: gta6-clipper, free on GitHub. Link in the description.
 
 Have a site, a Notion page or your own repo? Use the badge:
 
 ```markdown
-[![Clipped with stream-clipper](https://img.shields.io/badge/clipped_with-stream--clipper-FFD400?labelColor=111111)](https://github.com/taarruunnnn/stream-clipper)
+[![Clipped with gta6-clipper](https://img.shields.io/badge/clipped_with-gta6--clipper-FFD400?labelColor=111111)](https://github.com/taarruunnnn/gta6-clipper)
 ```
 
-[![Clipped with stream-clipper](https://img.shields.io/badge/clipped_with-stream--clipper-FFD400?labelColor=111111)](https://github.com/taarruunnnn/stream-clipper)
+[![Clipped with gta6-clipper](https://img.shields.io/badge/clipped_with-gta6--clipper-FFD400?labelColor=111111)](https://github.com/taarruunnnn/gta6-clipper)
 
-**3. Get your channel featured here.** Shoutouts go both ways: [fill in this short form](https://github.com/taarruunnnn/stream-clipper/issues/new?template=showcase.yml) and your channel is added to the list below, with a link.
+**3. Get your channel featured here.** Shoutouts go both ways: [fill in this short form](https://github.com/taarruunnnn/gta6-clipper/issues/new?template=showcase.yml) and your channel is added to the list below, with a link.
 
-### Channels made with stream-clipper
+### Channels made with gta6-clipper
 
 | Channel | Game |
 |---|---|
 | [Vice Clipped - GTA 6 Clips](https://www.youtube.com/@viceclipped-t5r) | GTA 6 |
-| *Yours next: [add your channel](https://github.com/taarruunnnn/stream-clipper/issues/new?template=showcase.yml)* | |
+| *Yours next: [add your channel](https://github.com/taarruunnnn/gta6-clipper/issues/new?template=showcase.yml)* | |
 
 ## Contributing
 
@@ -316,7 +316,7 @@ The most useful things right now: run it on Windows or Linux and report what bre
 
 ## Contact
 
-Questions, ideas, or want to learn how it was built? Email **[tarunkg1999@gmail.com](mailto:tarunkg1999@gmail.com)**, or [open an issue](https://github.com/taarruunnnn/stream-clipper/issues) so others can benefit from the answer.
+Questions, ideas, or want to learn how it was built? Email **[tarunkg1999@gmail.com](mailto:tarunkg1999@gmail.com)**, or [open an issue](https://github.com/taarruunnnn/gta6-clipper/issues) so others can benefit from the answer.
 
 ## License
 

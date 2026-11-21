@@ -1,6 +1,6 @@
 # Notes for coding agents (Codex, Claude Code, others)
 
-stream-clipper is a local Python pipeline that turns game streams into vertical Shorts. Read `README.md` for what it does and `skills/stream-clipper/SKILL.md` for how to operate it on a user's behalf; the rules in that skill apply to you too.
+gta6-clipper is a local Python pipeline that turns game streams into vertical Shorts. Read `README.md` for what it does and `skills/gta6-clipper/SKILL.md` for how to operate it on a user's behalf; the rules in that skill apply to you too.
 
 ## Run and check
 

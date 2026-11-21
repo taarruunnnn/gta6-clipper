@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GTA 6 Clipper: free Claude Code skill that clips streams into Shorts</title>
+<meta name="description" content="GTA 6 Clipper is a free, open-source tool and Claude Code skill (works with OpenAI Codex) that finds the best GTA 6 stream moments, edits them into YouTube Shorts with hooks and captions, and posts them automatically.">
+<link rel="canonical" href="https://taarruunnnn.github.io/gta6-clipper/">
+<meta property="og:title" content="GTA 6 Clipper: free Claude Code skill that clips streams into Shorts">
+<meta property="og:description" content="Finds the best GTA 6 stream moments, edits them into Shorts and posts them. Free, open source, runs on your own computer.">
+<meta property="og:image" content="https://taarruunnnn.github.io/gta6-clipper/layout.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"SoftwareSourceCode","name":"GTA 6 Clipper","alternateName":"gta6-clipper",
+ "description":"Open-source GTA 6 clipper and YouTube Shorts automation tool. A Claude Code skill that also works with OpenAI Codex.",
+ "codeRepository":"https://github.com/taarruunnnn/gta6-clipper","license":"https://opensource.org/licenses/MIT",
+ "programmingLanguage":["Python","JavaScript"],"operatingSystem":"macOS","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}
+</script>
+<style>
+  :root { --bg:#0e0f13; --panel:#181a21; --line:#2a2d38; --text:#eceef4; --dim:#a3aabb; --accent:#ffd400; --ink:#111; }
+  @media (prefers-color-scheme: light) { :root { --bg:#fbfaf6; --panel:#fff; --line:#e3e0d6; --text:#16171b; --dim:#555b68; --accent:#f2c500; } }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:17px/1.6 -apple-system, "Segoe UI", system-ui, sans-serif; }
+  main { max-width:880px; margin:0 auto; padding:48px 16px 72px; }
+  header { text-align:center; }
+  header img { width:120px; height:120px; }
+  h1 { font-size:clamp(2rem, 6vw, 3.2rem); line-height:1.1; margin:18px 0 10px; text-wrap:balance; }
+  h2 { font-size:1.45rem; margin:44px 0 10px; }
+  .lede { color:var(--dim); font-size:1.15rem; max-width:62ch; margin:0 auto 26px; text-wrap:pretty; }
+  .cta { display:inline-block; background:var(--accent); color:var(--ink); font-weight:700; text-decoration:none; padding:13px 24px; border-radius:10px; margin:4px; }
+  .cta.ghost { background:transparent; color:var(--text); border:1px solid var(--line); }
+  .cta:focus-visible, a:focus-visible { outline:3px solid var(--accent); outline-offset:3px; }
+  pre { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 16px; overflow-x:auto; font-size:.92rem; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:14px; padding:0; list-style:none; }
+  .grid li { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px; }
+  .grid b { display:block; margin-bottom:4px; }
+  .grid span { color:var(--dim); font-size:.95rem; }
+  .shot { display:block; max-width:100%; height:auto; border-radius:12px; border:1px solid var(--line); margin:18px auto; }
+  a { color:inherit; }
+  dt { font-weight:700; margin-top:16px; } dd { margin:4px 0 0; color:var(--dim); }
+  footer { margin-top:56px; color:var(--dim); font-size:.9rem; text-align:center; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <img src="logo.png" alt="GTA 6 Clipper logo" width="120" height="120">
+    <h1>GTA 6 Clipper</h1>
+    <p class="lede">A free, open-source tool that finds the best GTA 6 stream moments, edits them into YouTube Shorts and posts them for you. It is a Claude Code skill, works with OpenAI Codex, and runs on your own computer.</p>
+    <a class="cta" href="https://github.com/taarruunnnn/gta6-clipper">Get it on GitHub</a>
+    <a class="cta ghost" href="https://github.com/taarruunnnn/gta6-clipper#install-in-5-minutes">Install in 5 minutes</a>
+  </header>
+
+  <h2>Install it as a Claude Code skill</h2>
+  <pre>/plugin marketplace add taarruunnnn/gta6-clipper
+/plugin install gta6-clipper@gta6-clipper</pre>
+  <p>Then ask Claude: “Use gta6-clipper to set up a clips channel for GTA 6 and show me today's best moments.” Using OpenAI Codex? It reads the project's <code>AGENTS.md</code> and can run the same commands.</p>
+
+  <h2>What the GTA 6 clipper does</h2>
+  <ul class="grid">
+    <li><b>Finds moments</b><span>Today's most-viewed Twitch viewer clips, live streams (it cuts when chat explodes) and finished YouTube streams.</span></li>
+    <li><b>Keeps only the good ones</b><span>An AI judge looks at frames and the transcript and rejects dull, unsafe or off-language clips.</span></li>
+    <li><b>Edits vertical Shorts</b><span>Hook, animated word-by-word captions, emojis, zoom on the peak, a narrator and sound effects.</span></li>
+    <li><b>Writes titles people search</b><span>Pulls live YouTube search phrases for GTA 6 and picks the title by a scoring rule.</span></li>
+    <li><b>Posts to YouTube</b><span>Direct upload through your own free Google project, up to 100 a day.</span></li>
+    <li><b>Learns</b><span>Reads view counts back and feeds your best hooks and titles into the next clips.</span></li>
+  </ul>
+
+  <img class="shot" src="layout.png" alt="Layout of a finished clip: hook, watch cue, reaction text, captions, credit and progress bar" width="960" height="960" loading="lazy">
+
+  <h2>Questions</h2>
+  <dl>
+    <dt>Is the GTA 6 clipper free?</dt>
+    <dd>Yes. It is MIT-licensed and open source. You need a Claude Code subscription for the AI judge; YouTube posting is free.</dd>
+    <dt>Does it only work for GTA 6?</dt>
+    <dd>No. It was built for GTA 6 clips, but it works for any game with a Twitch category. Change two settings.</dd>
+    <dt>Does it work with Claude and with Codex?</dt>
+    <dd>It ships as a Claude Code plugin with a skill. OpenAI's Codex command-line agent can run it through the included AGENTS.md. ChatGPT in the browser can only guide you, because it cannot run programs on your computer.</dd>
+    <dt>What computer do I need?</dt>
+    <dd>It is developed and tested on Apple Silicon Macs. Windows and Linux support is written but untested.</dd>
+    <dt>Will it get me views?</dt>
+    <dd>Nobody can promise that. It gives you speed and consistency; views depend on the moments, the competition and luck.</dd>
+    <dt>Can I post other people's streams?</dt>
+    <dd>Only when the creator allows it. The project's README explains how to use it responsibly.</dd>
+  </dl>
+
+  <footer>
+    <p>Questions: <a href="mailto:tarunkg1999@gmail.com">tarunkg1999@gmail.com</a> · <a href="https://github.com/taarruunnnn/gta6-clipper/issues">Issues</a> · MIT license</p>
+    <p>Unofficial fan project. Not affiliated with Rockstar Games, Take-Two, Twitch, YouTube, Anthropic or OpenAI.</p>
+  </footer>
+</main>
+</body>
+</html>
