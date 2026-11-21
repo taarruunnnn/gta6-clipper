@@ -1,0 +1,15 @@
+{
+  "name": "stream-clipper",
+  "description": "A hands-off clip factory for game streams: discover, score, cut, judge, edit, post, learn.",
+  "owner": { "name": "taarruunnnn", "url": "https://github.com/taarruunnnn" },
+  "plugins": [
+    {
+      "name": "stream-clipper",
+      "source": "./",
+      "description": "Find the best moments in game streams, edit them into vertical Shorts, and post them. Runs locally; nothing is posted publicly without your say.",
+      "version": "0.1.0",
+      "category": "productivity",
+      "tags": ["clipping", "shorts", "twitch", "youtube", "video", "gaming"]
+    }
+  ]
+}

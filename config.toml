@@ -1,0 +1,114 @@
+# Defaults for everyone. Put your own channel's values in config.local.toml (same sections, never committed);
+# anything set there wins over this file.
+
+[brand]
+handle = ""                 # e.g. "@yourchannel" - burned in as a small watermark. Empty = no watermark.
+credit = true               # show "clip: <creator>" next to the watermark
+accent = "#FFD400"          # hook box + highlighted caption word + progress bar
+hook_text = "#111111"       # text colour inside the hook box
+caption_fill = "#FFFFFF"
+caption_stroke = "#000000"
+font = ""                   # path to a .ttf; empty = Impact, or the nearest bold font on this system
+caption_size = 92
+hook_size = 76
+mask_profanity = true       # f*ck instead of the full word (keeps clips monetisable)
+motion = true               # true: animated hook, popping captions, commentary beats (Remotion). false: classic still text
+sound_effects = true        # motion style only: every piece of text arrives with a sound
+progress_bar = true         # thin retention bar along the bottom
+punch_zoom = 0.10           # zoom-in at the peak moment (0 = off)
+
+[layout]
+default = "focus"           # focus | fill | stack
+focus_game_height = 1080    # focus: gameplay is cropped to a 1080x1080 square over a blurred background
+focus_game_y = 420          # focus: top edge of the gameplay
+caption_y = 1400            # vertical centre of captions (keep above 1560: app buttons live below)
+stack_cam_height = 760      # stack: facecam on top, gameplay below
+stack_cam = [0.0, 0.0, 0.25, 0.25]   # facecam rectangle in the source as fractions: x, y, w, h
+
+[clip]
+top = 6                     # candidates per video
+min_seconds = 15
+max_seconds = 35
+lead = 12                   # seconds kept before the peak (the build-up)
+
+[scoring]                   # weight of each signal when picking moments
+most_replayed = 2.0         # YouTube heatmap (VODs only, appears after the video has views)
+viewer_clips = 2.0          # clips Twitch viewers made, weighted by their view counts
+chat = 1.5                  # chat message rate, hype messages count double
+loudness = 1.0
+chat_lag = 8                # chat reacts this many seconds after the moment
+
+[performance]
+mode = "background"         # background: efficiency cores + low priority, laptop stays responsive
+                            # fast: all cores, finishes sooner
+fps = 30
+bitrate = "8M"
+whisper_model = "mlx-community/whisper-large-v3-turbo"   # Apple Silicon: runs on the GPU
+whisper_model_other = "small"   # Windows / Linux (faster-whisper): tiny, base, small, medium, large-v3
+max_source_minutes = 240    # only analyse this much of a long VOD
+
+[live]
+height = 1080
+before = 18                 # seconds kept before a chat spike
+after = 14
+window = 10                 # spike = chat rate over this many seconds ...
+ratio = 3.0                 # ... is this many times the recent baseline
+min_messages = 8
+cooldown = 45
+buffer_minutes = 5          # rolling recording kept on disk; older video is deleted
+
+[publish]
+platforms = ["youtube"]     # what "Post everywhere" sends to; add "tiktok", "instagram", "x" later
+outbox = "outbox"           # finished clips + caption text are also copied here
+default_hashtags = "#gta6 #gtavi #gaming"
+
+[youtube]
+language = "en"
+channel_id = ""             # your channel id (UC...). When set, uploads to any other channel are refused.
+privacy = "private"         # public | unlisted | private. Start private, look at one upload, then switch.
+category = 20               # 20 = Gaming
+
+[avatar]                    # optional: a webcam-style tile with your own character that reacts (motion style only)
+enabled = false
+folder = "brand/avatar"     # five square images: idle, talk, watch, shock, laugh (.png)
+size = 280
+x = 30
+y = 1415
+caption_y = 1300            # captions move up a little so they clear the tile
+disclose = true             # mark uploads as containing AI-generated media when the avatar is on
+
+[commentary]                # your narrator: one spoken line that sets up the clip, stream audio ducked under it
+enabled = true
+voice = "en-GB-RyanNeural"  # any edge-tts voice: `edge-tts --list-voices`
+rate = "+12%"               # a bit faster = more energy
+pitch = "+0Hz"
+fallback_voice = "Daniel"   # Mac voice used if the neural voice is unreachable
+
+[auto]                      # hands-off mode: python -m clipper auto
+mode = "approve"            # approve: render everything, you press Post | auto: post without asking
+daily_cap = 4               # posts per day
+min_gap_minutes = 150       # spacing between posts
+min_score = 7               # judge score (1-10) a clip needs to be rendered and posted
+max_age_hours = 48          # older clips are stale and are not posted
+game = "Grand Theft Auto VI"   # the game, exactly as Twitch names its category
+seo_seed = "gta 6"          # the phrase titles are optimised around
+languages = ["EN"]          # stream languages to clip; [] = any
+min_viewers = 1500
+blocklist = []              # creators never to clip
+channels_per_cycle = 12     # top live channels whose viewer clips are checked
+min_clip_views = 20
+clips_per_cycle = 8         # new viewer clips processed per cycle
+live_watchers = 2           # streams watched live for chat spikes at the same time
+live_minutes = 60
+youtube_queries = ["gta 6 full stream", "gta 6 gameplay live"]
+youtube_streams_only = true # only finished live streams, never edited uploads
+youtube_min_minutes = 20
+youtube_min_views = 5000
+clips_per_video = 3
+topics_per_cycle = 2        # searched moments with no clip yet that the loop goes looking for each cycle
+cycle_minutes = 20
+learn_hours = 6
+
+[llm]                       # the command-line assistant that judges clips and writes copy
+# {prompt} and {model} are filled in. Default is Claude Code. It must be able to read image files in the working folder.
+command = ["claude", "-p", "{prompt}", "--model", "{model}", "--allowedTools", "Read"]

@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clipper</title>
+<style>
+  :root { --bg:#0e0f13; --panel:#181a21; --line:#2a2d38; --text:#eceef4; --dim:#9097a8; --accent:#ffd400; --ok:#3ddc84; --bad:#ff5d5d; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:14px/1.45 -apple-system, system-ui, sans-serif; }
+  header { position:sticky; top:0; z-index:5; background:var(--bg); border-bottom:1px solid var(--line); padding:12px 20px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  h1 { font-size:17px; margin:0 8px 0 0; }
+  input, textarea, select { background:#0b0c10; color:var(--text); border:1px solid var(--line); border-radius:8px; padding:8px 10px; font:inherit; width:100%; }
+  textarea { resize:vertical; min-height:52px; }
+  input:focus, textarea:focus, select:focus { outline:2px solid var(--accent); outline-offset:-1px; }
+  button { background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:8px; padding:8px 12px; font:inherit; cursor:pointer; }
+  button:hover { border-color:var(--dim); }
+  button.primary { background:var(--accent); color:#111; border-color:var(--accent); font-weight:700; }
+  button:disabled { opacity:.45; cursor:default; }
+  #src { flex:1; min-width:240px; }
+  #status { color:var(--dim); font-size:13px; width:100%; }
+  #status b { color:var(--accent); }
+  .tabs { display:flex; gap:6px; }
+  .tabs button.on { border-color:var(--accent); color:var(--accent); }
+  main { padding:20px; display:grid; gap:18px; grid-template-columns:repeat(auto-fill, minmax(min(100%, 560px), 1fr)); }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px; display:grid; grid-template-columns:200px 1fr; gap:14px; }
+  .card video, .card .ph { width:200px; aspect-ratio:9/16; border-radius:10px; background:#000; display:block; }
+  .ph { display:grid; place-items:center; color:var(--dim); text-align:center; padding:12px; border:1px dashed var(--line); }
+  .fields { display:grid; gap:8px; align-content:start; min-width:0; }
+  .meta { color:var(--dim); font-size:12px; overflow-wrap:anywhere; }
+  .meta b { color:var(--text); }
+  label { font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--dim); display:block; margin-bottom:3px; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .row > * { flex:1; }
+  .chips { display:flex; gap:6px; flex-wrap:wrap; }
+  .chip { border:1px solid var(--line); border-radius:99px; padding:3px 10px; font-size:12px; cursor:pointer; user-select:none; }
+  .chip.on { border-color:var(--accent); color:var(--accent); }
+  .chip.done { border-color:var(--ok); color:var(--ok); }
+  .chip.fail { border-color:var(--bad); color:var(--bad); }
+  .opts button { font-size:12px; padding:4px 8px; text-align:left; }
+  .badge { font-size:11px; padding:2px 8px; border-radius:99px; background:#262936; }
+  .badge.rendered { color:var(--accent); } .badge.published { color:var(--ok); }
+  pre { margin:0 20px 20px; padding:12px; background:var(--panel); border:1px solid var(--line); border-radius:10px; color:var(--dim); font-size:12px; max-height:180px; overflow:auto; white-space:pre-wrap; }
+  .empty { color:var(--dim); padding:40px 20px; }
+  @media (max-width:520px) { .card { grid-template-columns:1fr; } .card video, .card .ph { width:100%; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Clipper</h1>
+  <input id="src" placeholder="Paste a YouTube / Twitch video or VOD link to find its best moments">
+  <button class="primary" id="find">Find clips</button>
+  <button id="learn" title="Pull view counts for posted clips and show what is working">Learn</button>
+  <div class="tabs" id="tabs"></div>
+  <div id="status"></div>
+</header>
+<main id="grid"></main>
+<pre id="log"></pre>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let state = {clips: []}, accounts = {configured: false, platforms: []}, tab = 'review', sel = {};
+const post = (path, body) => fetch(path, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)}).then(r => r.json());
+const TABS = {review: c => c.status === 'candidate' || c.status === 'rendered', published: c => c.status === 'published', rejected: c => c.status === 'rejected', discarded: c => c.status === 'discarded'};
+
+function card(c) {
+  const plats = state.platforms || [];
+  if (!sel[c.id]) sel[c.id] = Object.fromEntries(plats.map(p => [p, true]));
+  const chips = plats.map(p => {
+    const done = c.posts?.[p];
+    const cls = done?.ok ? 'done' : done ? 'fail' : sel[c.id][p] ? 'on' : '';
+    const off = accounts.configured && !accounts.platforms.includes(p);
+    return `<span class="chip ${cls}" data-act="plat" data-p="${p}" title="${esc(done?.error || (off ? 'not connected' : ''))}">${done?.ok ? '✓ ' : ''}${p}${off ? ' ⚠' : ''}</span>`;
+  }).join('');
+  const links = Object.entries(c.posts || {}).filter(([, v]) => v.url).map(([p, v]) => `<a href="${esc(v.url)}" target="_blank" rel="noopener" style="color:var(--ok)">${p}</a>`).join(' · ');
+  const media = c.output
+    ? `<video controls preload="none" poster="/media/${c.id}/thumb.jpg?${c.created}" src="/media/${c.id}/out.mp4?${Date.now()}"></video>`
+    : `<div class="ph">Not rendered yet.<br>Write a hook, then Render.</div>`;
+  const opts = (c.hook_options || []).map(h => `<button data-act="hook" data-h="${esc(h)}">${esc(h)}</button>`).join('');
+  return `<div class="card" data-id="${c.id}">
+    <div>${media}</div>
+    <div class="fields">
+      <div class="meta"><span class="badge ${c.status}">${c.status}</span> <b>${esc(c.creator || 'local file')}</b> · ${(c.out - c.in).toFixed(0)}s · score ${c.score}${c.stats?.length ? ' · <b>' + Math.max(0, ...Object.values(c.stats.at(-1).by).map(v => v.views || 0)).toLocaleString() + ' views</b>' : ''} · ${esc((c.why || []).join(', '))}${c.judge ? `<br><b>Judge ${c.judge.score}/10</b> ${esc(c.judge.reason)}` : ''}<br>${esc(c.text.slice(0, 140))}…</div>
+      <div><label>Hook (on screen)</label><input data-f="hook" value="${esc(c.hook)}" maxlength="70">
+        <div class="chips opts" style="margin-top:6px">${opts}</div></div>
+      <div><label>Title (YouTube)</label><input data-f="title" value="${esc(c.title)}" maxlength="100"></div>
+      <div><label>Caption</label><textarea data-f="caption">${esc(c.caption)}</textarea></div>
+      <div><label>Hashtags</label><input data-f="hashtags" value="${esc(c.hashtags)}"></div>
+      <div class="row">
+        <div><label>Layout</label><select data-f="layout">${(state.layouts || []).map(l => `<option ${l === c.layout ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+        <div><label>Start (s)</label><input data-f="in" type="number" step="0.1" value="${c.in}"></div>
+        <div><label>End (s)</label><input data-f="out" type="number" step="0.1" value="${c.out}"></div>
+      </div>
+      <div class="row"><button data-act="copy">✨ Draft copy</button><button data-act="render">Render</button><button data-act="reveal">Show file</button><button data-act="discard">Discard</button></div>
+      <div class="chips">${chips}</div>
+      <button class="primary" data-act="post" ${c.output ? '' : 'disabled'}>Post everywhere</button>
+      <div class="meta">${links}</div>
+    </div></div>`;
+}
+
+function draw(force) {
+  const busy = state.busy ? `<b>Working:</b> ${esc(state.busy)}` + (state.queued.length ? ` · ${state.queued.length} queued` : '') : 'Idle';
+  const acct = !accounts.configured ? 'Posting: outbox folder only (run <code>python -m clipper youtube-login</code> to connect YouTube)'
+    : `Posting as <b>${esc(accounts.user)}</b> to ${accounts.platforms.join(', ') || 'no connected platforms'}`;
+  $('#status').innerHTML = `${busy} &nbsp;|&nbsp; ${acct}`;
+  $('#log').textContent = (state.log || []).join('\n');
+  $('#log').scrollTop = 1e9;
+  $('#tabs').innerHTML = Object.keys(TABS).map(t => `<button class="${t === tab ? 'on' : ''}" data-tab="${t}">${t} ${state.clips.filter(TABS[t]).length}</button>`).join('');
+  const editing = document.activeElement && document.activeElement.closest('.card');
+  const playing = [...document.querySelectorAll('video')].some(v => !v.paused);
+  const sig = JSON.stringify([tab, state.clips, accounts.platforms]);
+  if (!force && (editing || playing || sig === draw.sig)) return;   // never yank a field or a playing video
+  draw.sig = sig;
+  const list = state.clips.filter(TABS[tab]);
+  $('#grid').innerHTML = list.map(card).join('') || `<div class="empty">Nothing here yet. Paste a link above, or run live mode from the terminal.</div>`;
+}
+
+async function refresh() { try { state = await (await fetch('/api/state')).json(); draw(); } catch (e) {} }
+async function save(el) {
+  const id = el.closest('.card').dataset.id, body = {id};
+  el.closest('.card').querySelectorAll('[data-f]').forEach(f => body[f.dataset.f] = f.value);
+  await post('/api/save', body);
+}
+
+document.addEventListener('change', e => { if (e.target.dataset.f) save(e.target); });
+document.addEventListener('click', async e => {
+  const t = e.target.closest('[data-act],[data-tab],#find,#learn');
+  if (!t) return;
+  if (t.id === 'find') { const src = $('#src').value.trim(); if (src) { await post('/api/find', {src}); $('#src').value = ''; } return refresh(); }
+  if (t.id === 'learn') { await post('/api/learn', {}); return refresh(); }
+  if (t.dataset.tab) { tab = t.dataset.tab; return draw(true); }
+  const cardEl = t.closest('.card'), id = cardEl.dataset.id, act = t.dataset.act;
+  if (act === 'plat') { sel[id][t.dataset.p] = !sel[id][t.dataset.p]; return draw(true); }
+  if (act === 'hook') { cardEl.querySelector('[data-f=hook]').value = t.dataset.h; await save(t); return; }
+  await save(t);
+  if (act === 'post') await post('/api/post', {id, platforms: Object.keys(sel[id]).filter(p => sel[id][p])});
+  else await post('/api/' + act, {id});
+  document.activeElement.blur(); await refresh(); draw(true);
+});
+fetch('/api/accounts').then(r => r.json()).then(a => { accounts = a; draw(true); });
+refresh(); setInterval(refresh, 2500);
+</script>
+</body>
+</html>

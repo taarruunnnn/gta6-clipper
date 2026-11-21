@@ -1,0 +1,19 @@
+# your channel, your secrets, your footage: none of it belongs in the repository
+config.local.toml
+client_secret*.json
+.youtube_token.json
+.env
+jobs/
+data/
+outbox/
+brand/
+auto.log
+
+# tooling
+.venv/
+__pycache__/
+*.pyc
+motion/node_modules/
+motion/public/avatar/
+motion/out/
+.DS_Store
