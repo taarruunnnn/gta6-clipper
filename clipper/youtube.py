@@ -76,6 +76,7 @@ def login():
     if not items:
         raise RuntimeError("that Google identity has no YouTube channel")
     t["channel_id"], t["channel_title"] = items[0]["id"], items[0]["snippet"]["title"]
+    t["login_at"] = time.time()
     want = cfg().get("youtube", {}).get("channel_id")
     if want and t["channel_id"] != want:
         raise RuntimeError(f"you picked the channel \"{t['channel_title']}\", but config.toml expects {want}. "
@@ -83,6 +84,15 @@ def login():
     save_json(TOKEN, t)
     TOKEN.chmod(0o600)
     return f"YouTube connected to channel: {t['channel_title']}"
+
+
+def signin_days_left():
+    """Days until the Google sign-in is expected to lapse (apps in "Testing" get about 7 days). None = no limit set."""
+    limit = cfg().get("youtube", {}).get("signin_days", 7)
+    t = load_json(TOKEN) or {}
+    if not limit or not t.get("login_at"):
+        return None
+    return limit - (time.time() - t["login_at"]) / 86400
 
 
 def channel():

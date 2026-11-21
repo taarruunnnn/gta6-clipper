@@ -98,8 +98,13 @@ def from_youtube(st, log):
         url = f"https://www.youtube.com/watch?v={v['id']}"
         st["seen"].append(v["id"])
         try:
-            if A["youtube_streams_only"] and not sources.info(url).get("was_live"):
+            meta = sources.info(url)
+            if A["youtube_streams_only"] and not meta.get("was_live"):
                 continue   # edited uploads are someone's finished work, not raw stream footage
+            lang = (meta.get("language") or "").split("-")[0].upper()
+            if A["languages"] and lang and lang not in A["languages"]:
+                log(f"  skipped (language {lang}): {v.get('title')}")
+                continue
             log(f"youtube: {v.get('title')} ({views:,} views)")
             find(url, top=A["clips_per_video"], log=log)
         except Exception as e:
@@ -162,10 +167,35 @@ def post_next(st, log):
     if any(v.get("ok") for v in c.get("posts", {}).values()):
         st["posted"].append(now)
         notify(f"Posted: {c.get('hook')}")
+    elif re.search(r"invalid_grant|sign-in|signed in|expired|revoked", str(c.get("posts")) + result, re.I):
+        c["posts"] = {}          # not the clip's fault: keep it queued and ask for a new sign-in
+        save_clip(c)
+        if now - st.get("warned_signin", 0) > 3 * 3600:
+            st["warned_signin"] = now
+            notify("Posting stopped: the YouTube sign-in expired. Renew it: python -m clipper youtube-login")
     else:   # do not retry the same clip forever
         c["status"] = "candidate"; c["posts"] = c.get("posts") or {"error": {"ok": False, "error": result, "url": "", "at": now}}
         save_clip(c)
         notify(f"Post failed: {result[:80]}")
+
+
+def signin_guard(st, log):
+    """Tell the user a day ahead that the YouTube sign-in is about to lapse, at most twice a day."""
+    from . import youtube
+    left = youtube.signin_days_left() if youtube.ready() else None
+    if left is not None and left < 1.5 and time.time() - st.get("warned_signin", 0) > 12 * 3600:
+        st["warned_signin"] = time.time()
+        when = "has probably expired" if left <= 0 else f"expires in about {max(1, round(left * 24))} hours"
+        notify(f"YouTube sign-in {when}. Renew it: python -m clipper youtube-login")
+        log(f"sign-in warning sent ({left:.1f} days left)")
+
+
+def tidy(st, log):
+    """Free disk space once every few hours."""
+    if time.time() - st.get("last_cleanup", 0) > cfg().get("cleanup", {}).get("every_hours", 6) * 3600:
+        st["last_cleanup"] = time.time()
+        from .cleanup import run
+        run(log=log)
 
 
 def learn_and_guard(st, log):
@@ -199,7 +229,7 @@ def cycle(log=print, live=True):
         from_viewer_clips(streams, st, log)
     except Exception as e:
         log(f"twitch step failed: {e}")
-    for step in (from_youtube, process_candidates, post_next, learn_and_guard):
+    for step in (signin_guard, from_youtube, process_candidates, post_next, learn_and_guard, tidy):
         save_json(STATE, st)   # survive a crash without re-clipping the same sources
         step(st, log)
     st["seen"] = st["seen"][-3000:]

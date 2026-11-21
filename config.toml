@@ -45,7 +45,7 @@ fps = 30
 bitrate = "8M"
 whisper_model = "mlx-community/whisper-large-v3-turbo"   # Apple Silicon: runs on the GPU
 whisper_model_other = "small"   # Windows / Linux (faster-whisper): tiny, base, small, medium, large-v3
-max_source_minutes = 240    # only analyse this much of a long VOD
+max_source_minutes = 240    # streams longer than this are skipped by the loop (raise it for marathon streams)
 
 [live]
 height = 1080
@@ -69,6 +69,7 @@ language = "en"
 channel_id = ""             # your channel id (UC...). When set, uploads to any other channel are refused.
 privacy = "private"         # public | unlisted | private. Start private, look at one upload, then switch.
 category = 20               # 20 = Gaming
+signin_days = 7             # a Google app in "Testing" keeps a sign-in about 7 days; you get a warning a day before. 0 = no limit
 
 [avatar]                    # optional: a webcam-style tile with your own character that reacts (motion style only)
 enabled = false
@@ -114,3 +115,9 @@ learn_hours = 6
 [llm]                       # the command-line assistant that judges clips and writes copy
 # {prompt} and {model} are filled in. Default is Claude Code. It must be able to read image files in the working folder.
 command = ["claude", "-p", "{prompt}", "--model", "{model}", "--allowedTools", "Read"]
+
+[cleanup]                   # the loop frees disk space by itself; the small clip records are always kept
+every_hours = 6
+rejected_hours = 1          # footage of rejected clips is deleted after this
+published_days = 7          # finished videos of posted clips are kept this long
+source_hours = 2            # downloaded stream audio and chat, once the moments have been taken from them

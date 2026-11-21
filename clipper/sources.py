@@ -13,7 +13,7 @@ def info(src):
         return {"title": Path(src).stem, "webpage_url": str(src), "uploader": ""}
     j = json.loads(ytdlp("-J", src, capture=True).stdout)
     keep = ("id", "title", "uploader", "uploader_id", "channel", "webpage_url", "duration", "view_count",
-            "heatmap", "is_live", "was_live", "extractor_key", "timestamp")
+            "heatmap", "is_live", "was_live", "extractor_key", "timestamp", "language")
     return {k: j.get(k) for k in keep}
 
 
@@ -26,7 +26,7 @@ def fetch_audio(src, d, max_minutes, dur=None):
         return hit[0]
     # cutting a section goes through ffmpeg, which YouTube throttles to about real time: only do it when needed
     cut = ["--download-sections", f"*0-{int(max_minutes * 60)}"] if not dur or dur > max_minutes * 60 else []
-    ytdlp("-f", "ba/wa/w", *cut, "-o", str(d / "audio.%(ext)s"), src)
+    ytdlp("-f", "wa/ba/w", *cut, "-o", str(d / "audio.%(ext)s"), src)   # smallest audio: only loudness is measured from it
     return [p for p in d.glob("audio.*") if p.suffix != ".part"][0]
 
 

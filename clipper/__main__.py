@@ -15,6 +15,7 @@
   learn                            pull view counts for posted clips and report what is working
   auto [--once] [--no-live]        hands-off: discover, clip, judge, render, post, learn (loops)
   judge <clip-id>                  score a candidate and write its copy
+  cleanup [--dry-run]              delete old footage (the loop does this by itself every few hours)
   autostart on|off|status          start the loop at login and restart it after a crash
   ui                               open the dashboard (review, edit, one-click post)
 """
@@ -30,6 +31,7 @@ def main():
     p = sub.add_parser("radar"); p.add_argument("login"); p.add_argument("--week", action="store_true")
     p = sub.add_parser("streams"); p.add_argument("game", nargs="?", default="Grand Theft Auto VI")
     sub.add_parser("list"); sub.add_parser("learn"); sub.add_parser("youtube-login"); sub.add_parser("keywords"); sub.add_parser("topics")
+    p = sub.add_parser("cleanup"); p.add_argument("--dry-run", action="store_true")
     p = sub.add_parser("autostart"); p.add_argument("action", choices=["on", "off", "status"])
     p = sub.add_parser("set"); p.add_argument("id")
     for k in ("hook", "title", "caption", "hashtags", "layout"):
@@ -63,6 +65,10 @@ def main():
     if a.cmd == "autostart":
         from . import autostart
         return print(getattr(autostart, a.action)())
+    if a.cmd == "cleanup":
+        from .cleanup import run
+        run(dry=a.dry_run)
+        return
     if a.cmd == "topics":
         from .topics import table
         return print(table())
