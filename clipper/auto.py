@@ -229,9 +229,15 @@ def cycle(log=print, live=True):
         from_viewer_clips(streams, st, log)
     except Exception as e:
         log(f"twitch step failed: {e}")
-    for step in (signin_guard, from_youtube, process_candidates, post_next, learn_and_guard, tidy):
+    # Post first, and again after the quick sources: a long stream can take half an hour to analyse and must never
+    # hold up a clip that is ready to go.
+    for step in (signin_guard, post_next, process_candidates, post_next, from_youtube, process_candidates, post_next,
+                 learn_and_guard, tidy):
         save_json(STATE, st)   # survive a crash without re-clipping the same sources
-        step(st, log)
+        try:
+            step(st, log)
+        except Exception as e:
+            log(f"{step.__name__} failed: {str(e)[:200]}")
     st["seen"] = st["seen"][-3000:]
     save_json(STATE, st)
 

@@ -30,6 +30,8 @@ top = 6                     # candidates per video
 min_seconds = 15
 max_seconds = 35
 lead = 12                   # seconds kept before the peak (the build-up)
+silence_db = -45            # a second quieter than this counts as silent
+max_silence_seconds = 3     # silence at the ends is trimmed; a clip with this much silence in the middle is dropped
 
 [scoring]                   # weight of each signal when picking moments
 most_replayed = 2.0         # YouTube heatmap (VODs only, appears after the video has views)
@@ -37,6 +39,12 @@ viewer_clips = 2.0          # clips Twitch viewers made, weighted by their view 
 chat = 1.5                  # chat message rate, hype messages count double
 loudness = 1.0
 chat_lag = 8                # chat reacts this many seconds after the moment
+chat_timeout = 180          # seconds to wait for a stream's chat replay
+chat_timeout_big = 900      # ... for streams with a million views or more
+transcript_scan = "auto"    # read the whole stream's transcript and let the assistant pick moments:
+                            # auto = only when loudness is the sole signal | always | never
+scan_per_hour = 4           # moments the assistant may propose per hour of stream
+scan_min_score = 6          # its 1-10 score a moment needs to become a candidate
 
 [performance]
 mode = "background"         # background: efficiency cores + low priority, laptop stays responsive

@@ -2,8 +2,9 @@
 
 Only the short sections that were picked are transcribed, never the whole stream.
 """
-import re
-from .util import cfg, duration
+import re, tempfile
+from pathlib import Path
+from .util import cfg, duration, run
 
 
 def transcribe(media):
@@ -34,6 +35,40 @@ def _faster_whisper(media, size):
     model = WhisperModel(size, device="cuda" if gpu else "cpu", compute_type="float16" if gpu else "int8")
     segs, _ = model.transcribe(str(media), word_timestamps=True, vad_filter=True, condition_on_previous_text=False)
     return [{"w": w.word.strip(), "s": round(w.start, 2), "e": round(w.end, 2)} for s in segs for w in (s.words or []) if w.word.strip()]
+
+
+def transcribe_long(media, log=print, chunk=1200):
+    """What was said across a whole stream, as [(start_seconds, text)] sentences.
+    The audio is cut into 20-minute pieces so memory stays flat however long the stream is."""
+    P = cfg()["performance"]
+    out = []
+    with tempfile.TemporaryDirectory() as tmp:
+        run(["ffmpeg", "-v", "error", "-i", media, "-vn", "-ac", "1", "-ar", "16000", "-f", "segment", "-segment_time", chunk,
+             "-c:a", "flac", f"{tmp}/c%04d.flac"], heavy=True)
+        files = sorted(Path(tmp).glob("c*.flac"))
+        for i, f in enumerate(files):
+            try:
+                import mlx_whisper
+                r = mlx_whisper.transcribe(str(f), path_or_hf_repo=P["whisper_model"], condition_on_previous_text=False, verbose=None)
+                segs = [(s["start"], s["text"]) for s in r.get("segments", [])]
+            except ImportError:
+                segs = _faster_segments(f, P.get("whisper_model_other", "small"))
+            out += [(round(i * chunk + s, 1), t.strip()) for s, t in segs if t.strip()]
+            if (i + 1) % 3 == 0 or i + 1 == len(files):
+                log(f"  transcribed {min((i + 1) * chunk, 10**9) // 60} of about {len(files) * chunk // 60} minutes")
+    return out
+
+
+def _faster_segments(media, size):
+    from faster_whisper import WhisperModel
+    try:
+        import ctranslate2
+        gpu = ctranslate2.get_cuda_device_count() > 0
+    except Exception:
+        gpu = False
+    model = WhisperModel(size, device="cuda" if gpu else "cpu", compute_type="float16" if gpu else "int8")
+    segs, _ = model.transcribe(str(media), vad_filter=True, condition_on_previous_text=False)
+    return [(s.start, s.text) for s in segs]
 
 
 def refine(words, peak, media, min_len, max_len, lead):

@@ -3,7 +3,7 @@ scores it as a standalone short, and writes the hook, title, caption and comment
 import re
 from . import seo, topics
 from .learn import hook_examples
-from .util import all_clips, cfg, clip_dir, llm_json, load_clip, run, save_clip
+from .util import all_clips, cfg, clip_dir, llm_json, load_clip, load_json, run, save_clip
 
 PROMPT = """You are the editor of a short-form gaming clips page (YouTube Shorts). Decide whether this candidate
 clip is worth posting, and if so write its copy.
@@ -14,6 +14,7 @@ Transcript ({secs:.0f} seconds): \"\"\"{text}\"\"\"
 Streamer: {creator}
 Source title: {title}
 Picked because: {why}
+Speech: {speech}
 {learned}
 {recent}
 {seo}
@@ -22,6 +23,7 @@ Picked because: {why}
 Score 1-10 as a standalone short for someone who has never seen the stream:
 - 8-10: clear setup and payoff, something visibly happens, strong reaction, understandable with no context.
 - 5-7: fine but ordinary.
+- A clip where nobody speaks for most of its length needs strong visible action to score above 5.
 - 1-4: no payoff, mostly silence or idle chatter, menus/loading/"be right back" screens, or needs context.
 The page posts in these languages only: {langs}. If the speech is in another language, score it 1.
 Set "safe" to false (and it will never be posted) if it contains slurs, hate, sexual content, harassment of a
@@ -57,7 +59,14 @@ def judge(clip_id, log=print):
     recent = ("Hooks this page used recently: " + "; ".join(f'"{h}"' for h in used) +
               ". Yours must NOT reuse their wording or sentence pattern. Vary the form: a question, a number, a "
               "plain statement, a quote from the clip.") if used else ""
-    prompt = PROMPT.format(recent=recent, secs=L, text=clip["text"][:1500], creator=clip.get("creator", ""), title=clip.get("source_title", ""),
+    words = load_json(d / "words.json", [])
+    said, gaps, prev = [w for w in words if clip["in"] <= w["s"] < clip["out"]], [], clip["in"]
+    for w in said + [{"s": clip["out"], "e": clip["out"]}]:
+        if w["s"] - prev >= 4:
+            gaps.append(f"{prev - clip['in']:.0f}-{w['s'] - clip['in']:.0f}s")
+        prev = w["e"]
+    speech = f"{len(said)} words spoken" + (f"; nobody speaks during {', '.join(gaps)}" if gaps else "; speech throughout")
+    prompt = PROMPT.format(recent=recent, speech=speech, secs=L, text=clip["text"][:1500], creator=clip.get("creator", ""), title=clip.get("source_title", ""),
                            why=", ".join(clip.get("why", [])), learned=hook_examples(),
                            seo=seo.brief(clip.get("creator", "")), topics=topic_brief,
                            langs=", ".join(cfg()["auto"]["languages"]) or "any")

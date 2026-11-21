@@ -21,13 +21,13 @@ def fetch_audio(src, d, max_minutes, dur=None):
     """Audio only: a few MB per hour instead of gigabytes of video. Enough to score every second."""
     if not is_url(src):
         return Path(src)
-    hit = [p for p in d.glob("audio.*") if p.suffix != ".part"]
+    hit = [p for p in d.glob("audio.*") if p.suffix not in (".part", ".ytdl")]
     if hit:
         return hit[0]
     # cutting a section goes through ffmpeg, which YouTube throttles to about real time: only do it when needed
     cut = ["--download-sections", f"*0-{int(max_minutes * 60)}"] if not dur or dur > max_minutes * 60 else []
     ytdlp("-f", "wa/ba/w", *cut, "-o", str(d / "audio.%(ext)s"), src)   # smallest audio: only loudness is measured from it
-    return [p for p in d.glob("audio.*") if p.suffix != ".part"][0]
+    return [p for p in d.glob("audio.*") if p.suffix not in (".part", ".ytdl")][0]
 
 
 def loudness_db(media):
@@ -49,12 +49,12 @@ def loudness_db(media):
 CHAT_HYPE = re.compile(r"(?i)LMAO|LOL|KEKW|OMEGALUL|CLIP|NO WAY|HOLY|WTF|\bW+\b|[💀😂🔥]")
 
 
-def youtube_chat_series(src, d, n):
+def youtube_chat_series(src, d, n, timeout=180):
     """Messages per second from a YouTube live-chat replay (only exists for finished live streams)."""
     c = np.zeros(n)
     if not list(d.glob("chat*.live_chat.json")):
-        try:   # chat replay of a huge stream can take longer than everything else combined: give it 3 minutes
-            ytdlp("--skip-download", "--write-subs", "--sub-langs", "live_chat", "-o", str(d / "chat"), src, check=False, capture=True, timeout=180)
+        try:   # chat replay of a huge stream can take longer than everything else combined, so it gets a time limit
+            ytdlp("--skip-download", "--write-subs", "--sub-langs", "live_chat", "-o", str(d / "chat"), src, check=False, capture=True, timeout=timeout)
         except subprocess.TimeoutExpired:
             for f in d.glob("chat*"):
                 f.unlink()   # a partial replay only covers the start and would bias the picks

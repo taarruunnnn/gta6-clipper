@@ -4,7 +4,8 @@ The stream is copied to disk as-is (no re-encode, ~1% CPU) into a rolling buffer
 disk use stays flat however long the stream runs. Twitch chat is read anonymously over IRC, YouTube chat
 through yt-dlp. Each spike becomes a normal candidate in the dashboard.
 """
-import json, re, socket, subprocess, sys, threading, time
+import json, re, shutil, socket, subprocess, sys, threading, time, urllib.request
+import numpy as np
 from collections import Counter
 from . import sources
 from .moments import make_candidate
@@ -77,6 +78,51 @@ def youtube_chat(url, d, chat, stop):
     p.terminate()
 
 
+def dead_air(path):
+    """Is this cut an ad break or a holding screen instead of the stream?
+    Anonymous Twitch viewers get a silent, frozen 'Commercial break in progress' card during ads. Both properties are
+    cheap to measure, so we check before spending a transcription and a judge call on it. Returns the reason, or ''."""
+    db = sources.loudness_db(path)
+    silent = float((db < -55).mean()) if len(db) else 1.0
+    raw = subprocess.run(["ffmpeg", "-v", "error", "-i", str(path), "-vf", "fps=1/4,scale=64:36,format=gray", "-f", "rawvideo", "-"],
+                         capture_output=True).stdout
+    n = len(raw) // (64 * 36)
+    frames = np.frombuffer(raw[: n * 64 * 36], np.uint8).reshape(n, -1).astype(np.int16) if n else None
+    frozen = n >= 2 and float(np.abs(np.diff(frames, axis=0)).mean()) < 1.5
+    if silent > 0.6:
+        return f"silent for {silent:.0%} of the cut"
+    if frozen and silent > 0.3:
+        return "frozen picture and mostly silent"
+    return ""
+
+
+class AdWatch(threading.Thread):
+    """Best effort: Twitch marks stitched ads in the stream's playlist. Poll it and remember when ads were on."""
+    MARK = re.compile(r"stitched-ad|X-TV-TWITCH-AD|#EXTINF:[\d.]+,Amazon")
+
+    def __init__(self, url, stop):
+        super().__init__(daemon=True)
+        self.url, self.stop_flag, self.spans = url, stop, []
+
+    def run(self):
+        while not self.stop_flag.is_set():
+            try:
+                req = urllib.request.Request(self.url, headers={"User-Agent": "Mozilla/5.0"})
+                txt = urllib.request.urlopen(req, timeout=8).read().decode("utf-8", "ignore")
+                if self.MARK.search(txt):
+                    now = time.time()
+                    if self.spans and now - self.spans[-1][1] < 20:
+                        self.spans[-1][1] = now + 6
+                    else:
+                        self.spans.append([now - 6, now + 6])
+            except Exception:
+                pass
+            self.stop_flag.wait(5)
+
+    def during(self, a, b):
+        return any(s < b and e > a for s, e in self.spans)
+
+
 class Recorder:
     """ffmpeg stream copy into 20 s segments; each finished segment's mtime is its wall-clock end."""
 
@@ -93,6 +139,7 @@ class Recorder:
             cmd += ["-map", str(i)]
         cmd += ["-c", "copy", "-t", str(int(minutes * 60)), "-f", "segment", "-segment_time", "20", "-segment_format", "mpegts",
                 "-reset_timestamps", "1", "-segment_list", str(d / "segs.csv"), "-segment_list_type", "csv", str(d / "seg_%05d.ts")]
+        self.url = urls[0]
         self.p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
 
     def segments(self):
@@ -145,17 +192,30 @@ def watch(url, minutes=60, log=print):
     target, args = (twitch_chat, (m.group(1).lower(), chat, stop)) if m else (youtube_chat, (url, ld, chat, stop))
     threading.Thread(target=target, args=args, daemon=True).start()
     rec = Recorder(url, ld, minutes)
+    ads = AdWatch(rec.url, stop) if m else None      # Twitch only
+    if ads:
+        ads.start()
+    skipped = 0
     log(f"watching {meta.get('uploader') or url} for {minutes:g} min (Ctrl+C to stop)")
     start, last, pending, made = time.time(), 0.0, [], 0
     win = int(L["window"])
 
     def finish(spike, rate):
         nonlocal made
+        nonlocal skipped
         a, b = spike - L["before"] - 8, spike + L["after"] + 8
+        if ads and ads.during(a, b):
+            skipped += 1
+            return log("  spike ignored: an ad break was running")
         cd = d / "clips" / str(next_clip_number(d))
         first = rec.cut(a, b, cd / "src.mp4")
         if first is None:
             return log("  spike missed: recording not ready")
+        why = dead_air(cd / "src.mp4")
+        if why:                                   # ad card or holding screen: do not transcribe or judge it
+            shutil.rmtree(cd, ignore_errors=True)
+            skipped += 1
+            return log(f"  spike ignored: ad break or holding screen ({why})")
         try:
             make_candidate(url, d, meta, spike - first, [f"chat spike {rate} msgs/{win}s"], float(rate), log,
                            section=cd / "src.mp4", sec_start=0.0)
@@ -190,4 +250,4 @@ def watch(url, minutes=60, log=print):
             finish(p[0], p[1])
         for f in ld.glob("seg_*.ts"):
             f.unlink()
-    log(f"done: {made} candidate(s). Review them with: python -m clipper ui")
+    log(f"done: {made} candidate(s), {skipped} ad-break or dead-air cut(s) skipped. Review them with: python -m clipper ui")
