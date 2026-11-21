@@ -19,6 +19,9 @@ def post_text(clip):
     if cfg()["brand"].get("credit") and clip.get("creator"):
         parts.append(f"🎥 {clip['creator']}")
     parts.append(clip.get("hashtags", "").strip())
+    P = cfg()["publish"]
+    if P.get("tool_credit", True):   # a one-line thank-you to the project; set tool_credit = false to leave it out
+        parts.append(P.get("tool_credit_text", "Clipped with stream-clipper (free, open source): github.com/taarruunnnn/stream-clipper"))
     return "\n\n".join(p for p in parts if p)
 
 

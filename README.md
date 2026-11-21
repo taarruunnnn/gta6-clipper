@@ -6,6 +6,8 @@
 
 <p align="center"><b>Streamers make the moments.<br>This finds them, edits them and posts them while you sleep.</b></p>
 
+<p align="center"><b>The open-source GTA 6 clipper</b> · a Claude Code skill · works with OpenAI Codex · YouTube Shorts automation for any game</p>
+
 <p align="center">A hands-off clip factory for game streams. It watches the biggest streams of a game, catches the moments viewers react to, turns them into vertical Shorts with a hook, animated captions and a narrator, writes titles from real search data, and uploads them to your YouTube channel. Everything runs on your own computer.</p>
 
 <p align="center">
@@ -29,6 +31,7 @@
 <a href="#let-it-run-by-itself">Run hands-off</a> ·
 <a href="#post-to-youtube">Post to YouTube</a> ·
 <a href="#use-it-from-claude-or-chatgpt">Claude / ChatGPT</a> ·
+<a href="#using-it-give-it-a-shoutout">Shoutout</a> ·
 <a href="#questions-people-ask">FAQ</a> ·
 <a href="#contact">Contact</a>
 </p>
@@ -243,6 +246,8 @@ For a long stream it never downloads the whole video. It scores every second fro
 
 **Why were most of my clips rejected?** That is normal. The judge keeps roughly one clip in eight to ten. Lower `min_score` in the config if you want more volume and accept weaker clips.
 
+**Why is there a line about stream-clipper in my video descriptions?** It is a small credit that keeps this free project discoverable. One setting turns it off: `tool_credit = false`.
+
 **Can I use my own voice or style?** Yes. Colours, fonts, the narrator voice, sound effects and layout are all settings in `config.toml`.
 
 ## Platform support
@@ -269,6 +274,41 @@ This tool reposts other people's work. That puts obligations on you, not on the 
 - Loudness alone is a weak signal; most picks from streams with nothing else get rejected.
 - The narrator uses an unofficial free route to Microsoft's online voices and can break without notice.
 - There are no automated tests yet.
+
+## Using it? Give it a shoutout
+
+This tool is free and always will be. If it earns you views, the best thank-you is telling other creators where it came from. Three easy ways, pick any:
+
+**1. Leave the credit line on (it is already on).** Every video description ends with one line:
+
+```
+Clipped with stream-clipper (free, open source): github.com/taarruunnnn/stream-clipper
+```
+
+It costs you nothing and it is how the next creator finds the tool. To remove it, set `tool_credit = false` under `[publish]` in `config.local.toml`. No hard feelings.
+
+**2. Mention it once.** Copy any of these into a video, a community post, or your channel's About page:
+
+> My clips are made with stream-clipper, a free open-source tool that finds and edits the best stream moments automatically: github.com/taarruunnnn/stream-clipper
+
+> How I make these clips: stream-clipper, free on GitHub. Link in the description.
+
+Have a site, a Notion page or your own repo? Use the badge:
+
+```markdown
+[![Clipped with stream-clipper](https://img.shields.io/badge/clipped_with-stream--clipper-FFD400?labelColor=111111)](https://github.com/taarruunnnn/stream-clipper)
+```
+
+[![Clipped with stream-clipper](https://img.shields.io/badge/clipped_with-stream--clipper-FFD400?labelColor=111111)](https://github.com/taarruunnnn/stream-clipper)
+
+**3. Get your channel featured here.** Shoutouts go both ways: [fill in this short form](https://github.com/taarruunnnn/stream-clipper/issues/new?template=showcase.yml) and your channel is added to the list below, with a link.
+
+### Channels made with stream-clipper
+
+| Channel | Game |
+|---|---|
+| [Vice Clipped - GTA 6 Clips](https://www.youtube.com/@viceclipped-t5r) | GTA 6 |
+| *Yours next: [add your channel](https://github.com/taarruunnnn/stream-clipper/issues/new?template=showcase.yml)* | |
 
 ## Contributing
 

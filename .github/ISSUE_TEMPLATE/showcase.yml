@@ -1,0 +1,30 @@
+name: Add my channel to the showcase
+description: You make clips with stream-clipper and want your channel listed in the README
+title: "Showcase: <your channel name>"
+labels: ["showcase"]
+body:
+  - type: input
+    id: channel
+    attributes:
+      label: Channel link
+      placeholder: https://www.youtube.com/@yourchannel
+    validations:
+      required: true
+  - type: input
+    id: game
+    attributes:
+      label: Which game(s) do you clip?
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything worth sharing?
+      description: Settings that worked, numbers you are happy to make public, what you changed. Optional.
+  - type: checkboxes
+    id: ok
+    attributes:
+      label: Confirm
+      options:
+        - label: This is my channel and I am happy for it to be listed publicly in this repository
+          required: true
