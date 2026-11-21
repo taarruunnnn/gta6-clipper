@@ -32,8 +32,9 @@ real person, someone's private information, or anything that would embarrass the
 Reply with ONLY a JSON object:
 {{"score": int, "reason": "one sentence", "safe": bool,
   "hooks": [3 on-screen hooks, max 7 words each, true to the clip, no spoilers, each ending with ONE fitting emoji],
-  "titles": [3 different YouTube titles, 40-70 characters, each containing the game name early and, where it
-             fits naturally, the streamer's name and a phrase people are actually searching; curiosity, no lies],
+  "titles": [3 different YouTube titles, 40-70 characters, each containing the game name early and a phrase people
+             are actually searching; curiosity, no lies. Do NOT put the streamer's name or nickname in the title:
+             the credit is already on the video],
   "caption": "2-3 sentence description: first sentence says what happens using a real search phrase, last one is
               a question that invites comments",
   "hashtags": "4-6 hashtags in one string",
@@ -45,6 +46,23 @@ Reply with ONLY a JSON object:
   "commentary": "one spoken line, max 14 words, in the voice of a hyped British gaming YouTuber talking to mates: casual,
                  a little cheeky, natural slang, sets up what is about to happen without spoiling it. If a topic fits, the
                  titles and caption must use that topic phrase."}}"""
+
+
+def retitle(clip_id):
+    """New title for an already-judged clip, without the streamer's name."""
+    clip = load_clip(clip_id)
+    who = clip.get("creator", "")
+    j = llm_json(f"""Rewrite this YouTube Shorts title three different ways. Keep the game name early and keep what it promises.
+Remove the streamer's name and any nickname for them ("{who}"); say "he", "she" or "this streamer" only if needed.
+40-70 characters each. {seo.brief("")}
+Searched topic to keep in the title, if any: {clip.get("topic") or "none"}
+Current title: {clip.get("title")}
+What happens in the clip: {(clip.get("judge") or {}).get("reason", "")}
+Reply with ONLY a JSON object: {{"titles": ["...", "...", "..."]}}""", model="haiku", timeout=120)
+    clip = load_clip(clip_id)
+    clip["title"] = seo.pick_title(j.get("titles", []), who, clip.get("topic", "")) or clip["title"]
+    save_clip(clip)
+    return clip["title"]
 
 
 def judge(clip_id, log=print):

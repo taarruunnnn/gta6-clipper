@@ -85,8 +85,8 @@ def score_title(title, creator="", topic=""):
         s += 3                                             # the game name must be findable
         if t.find(game_words[0]) < 25:
             s += 1                                         # ... and early: titles get cut off in the feed
-    if creator and creator.lower() in t:
-        s += 2                                             # people search streamer names
+    if creator and any(n in t for n in {creator.lower(), creator.lower().strip("_"), creator.lower().replace(" ", "")} if len(n) > 2):
+        s -= 4                                             # the streamer is credited on the video, not in the title
     s += min(3, sum(1 for w in m["terms"] if w in t))      # words the current winners share
     for phrase in top_keywords(8) + m["suggestions"]:      # overlap with a real search phrase, best opportunities first
         extra = [w for w in phrase.lower().split() if w not in game_words and len(w) > 2]
@@ -121,19 +121,23 @@ def hashtags(tags):
 KEYWORDS = JOBS / "keywords.json"
 
 
-def research(limit=24, log=print):
+def research(limit=None, log=print):
     """Expand the seed through YouTube autocomplete (seed + a..z), then measure each phrase on today's uploads:
     demand = views today's videos for it are pulling, competition = how many were uploaded today.
     Opportunity = median views per video today: high means viewers outnumber uploaders."""
     import statistics, string
-    seed = cfg()["auto"]["seo_seed"]
-    rank = {}
-    for q in [seed] + [f"{seed} {c}" for c in string.ascii_lowercase]:
-        for i, ph in enumerate(suggestions(q)):
-            ph = ph.lower().strip()
+    A = cfg()["auto"]
+    seed, limit = A["seo_seed"], limit or A.get("research_limit", 40)
+    rank, themed = {}, []
+    themes = A.get("topic_seeds", [])
+    for q in [seed] + [f"{seed} {c}" for c in string.ascii_lowercase] + [f"{seed} {t}" for t in themes]:
+        got = [ph.lower().strip() for ph in suggestions(q)]
+        for i, ph in enumerate(got):
             if ph != seed and seed in ph:
                 rank[ph] = rank.get(ph, 0) + (10 - i)       # earlier in autocomplete = searched more
-    picked = sorted(rank, key=lambda k: -rank[k])[:limit]
+        if q.split(seed, 1)[-1].strip() in themes:           # keep the best few of every theme, however niche
+            themed += [ph for ph in got if ph != seed and seed in ph][:3]
+    picked = list(dict.fromkeys(sorted(rank, key=lambda k: -rank[k])[:limit] + themed))
     log(f"{len(rank)} search phrases found, measuring the top {len(picked)}")
     rows = []
     for ph in picked:

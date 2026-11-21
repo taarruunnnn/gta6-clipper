@@ -103,6 +103,9 @@ min_score = 7               # judge score (1-10) a clip needs to be rendered and
 max_age_hours = 48          # older clips are stale and are not posted
 game = "Grand Theft Auto VI"   # the game, exactly as Twitch names its category
 seo_seed = "gta 6"          # the phrase titles are optimised around
+topic_seeds = ["hidden", "secret", "easter egg", "glitch", "location", "mission", "money", "car", "cheat", "how to"]
+                            # themes the keyword research always explores, so searches like "hidden places" get tracked
+research_limit = 40         # search phrases measured per research run
 languages = ["EN"]          # stream languages to clip; [] = any
 min_viewers = 1500
 blocklist = []              # creators never to clip

@@ -11,6 +11,7 @@
   publish <clip-id> [platforms..]  upload (same as the dashboard's Post button)
   youtube-login                    connect your YouTube channel (one time)
   keywords                         what people search for the game, ranked by views per upload today
+  hunt                             look for searched topics (hidden places, glitches ...) in streams already transcribed
   topics                           the topic database: searched moments, demand, and our clips for each
   learn                            pull view counts for posted clips and report what is working
   auto [--once] [--no-live]        hands-off: discover, clip, judge, render, post, learn (loops)
@@ -30,7 +31,7 @@ def main():
     p = sub.add_parser("live"); p.add_argument("url"); p.add_argument("--minutes", type=float, default=60)
     p = sub.add_parser("radar"); p.add_argument("login"); p.add_argument("--week", action="store_true")
     p = sub.add_parser("streams"); p.add_argument("game", nargs="?", default="Grand Theft Auto VI")
-    sub.add_parser("list"); sub.add_parser("learn"); sub.add_parser("youtube-login"); sub.add_parser("keywords"); sub.add_parser("topics")
+    sub.add_parser("list"); sub.add_parser("learn"); sub.add_parser("youtube-login"); sub.add_parser("keywords"); sub.add_parser("topics"); sub.add_parser("hunt")
     p = sub.add_parser("cleanup"); p.add_argument("--dry-run", action="store_true")
     p = sub.add_parser("autostart"); p.add_argument("action", choices=["on", "off", "status"])
     p = sub.add_parser("set"); p.add_argument("id")
@@ -68,6 +69,11 @@ def main():
     if a.cmd == "cleanup":
         from .cleanup import run
         run(dry=a.dry_run)
+        return
+    if a.cmd == "hunt":
+        from .moments import hunt
+        be_nice()
+        hunt()
         return
     if a.cmd == "topics":
         from .topics import table

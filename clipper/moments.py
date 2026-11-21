@@ -87,6 +87,25 @@ Reply with ONLY a JSON object:
                "topic": "one of the searched moments above, copied exactly, or null"}}]}}"""
 
 
+HUNT = """You are searching one hour of a live game stream's transcript for footage of specific things people are
+searching for on YouTube.
+
+Streamer: {who}
+Stream title: {title}
+Searched topics: {topics}
+
+Transcript, one line per sentence, with the time it was said:
+{text}
+
+For each searched topic, is there a moment in this hour that genuinely SHOWS it (the streamer finds the hidden place,
+triggers the glitch, gets the car, reaches the ending, discovers the easter egg)? Mentioning the topic in passing does
+not count: it has to be happening on screen at that time. Most hours will have none. Up to {n} moments.
+
+Reply with ONLY a JSON object:
+{{"moments": [{{"at": "h:mm:ss when it happens", "score": 1-10 for how clearly it shows the topic, "why": "what happens,
+               under 15 words", "topic": "the searched topic, copied exactly"}}]}}"""
+
+
 def _seconds(stamp):
     try:
         parts = [float(x) for x in str(stamp).strip("[] ").split(":")]
@@ -95,7 +114,7 @@ def _seconds(stamp):
     return sum(v * 60 ** i for i, v in enumerate(reversed(parts)))
 
 
-def transcript_moments(audio, d, meta, log=print):
+def transcript_moments(audio, d, meta, log=print, focus=None):
     """Read what was said across the whole stream and let the assistant point at the moments.
     Used when a stream has no chat, viewer-clip or most-replayed signal, where loudness alone picks badly."""
     from . import topics
@@ -107,14 +126,15 @@ def transcript_moments(audio, d, meta, log=print):
         save_json(cache, segs)
     if not segs:
         return []
-    hot = "; ".join(p for p, _ in topics.moments()[:20]) or "none"
+    hot = "; ".join(focus or [p for p, _ in topics.moments()[:30]]) or "none"
+    template = HUNT if focus else SCAN
     picks, hour = [], 3600
     for h in range(0, int(segs[-1][0]) + 1, hour):
         lines = [f"[{fmt_t(s)}] {t}" for s, t in segs if h <= s < h + hour]
         if len(lines) < 20:
             continue
         try:
-            j = llm_json(SCAN.format(who=meta.get("uploader") or "", title=meta.get("title") or "", topics=hot,
+            j = llm_json(template.format(who=meta.get("uploader") or "", title=meta.get("title") or "", topics=hot,
                                      text="\n".join(lines)[:90000], n=cfg()["scoring"].get("scan_per_hour", 4)), timeout=300)
         except Exception as e:
             log(f"  hour {h // hour + 1}: no answer ({str(e)[:60]})")
@@ -122,9 +142,45 @@ def transcript_moments(audio, d, meta, log=print):
         for m in j.get("moments", []):
             t = _seconds(m.get("at"))
             if t is not None and h - 60 <= t <= h + hour + 60:
+                if focus and m.get("topic") not in focus:
+                    continue
                 picks.append({"t": t, "score": int(m.get("score") or 0), "why": str(m.get("why") or ""), "topic": m.get("topic") or ""})
         log(f"  hour {h // hour + 1}: {len(j.get('moments', []))} moments")
     return picks
+
+
+def hunt(log=print, per_stream=4):
+    """Look through every stream we have already transcribed for searched topics we have no clip for yet.
+    Each stream is only asked about a topic once."""
+    from . import topics
+    from .util import JOBS
+    open_topics = [p for p, _ in topics.moments(only_open=True)]
+    made = []
+    for tf in sorted(JOBS.glob("*/full_transcript.json")):
+        d = tf.parent
+        meta = load_json(d / "info.json", {})
+        url = meta.get("webpage_url")
+        asked = load_json(d / "hunted.json", [])
+        todo = [t for t in open_topics if t not in asked][:25]
+        if not url or not todo:
+            continue
+        log(f"hunting {len(todo)} topics in: {(meta.get('title') or '')[:60]}")
+        picks = sorted(transcript_moments(None, d, meta, log, focus=todo), key=lambda m: -m["score"])
+        save_json(d / "hunted.json", asked + todo)
+        used = []
+        for m in picks:
+            if len(used) >= per_stream or m["score"] < cfg()["scoring"].get("scan_min_score", 6):
+                break
+            if any(abs(m["t"] - u) < cfg()["clip"]["max_seconds"] for u in used):
+                continue
+            used.append(m["t"])
+            try:
+                c = make_candidate(url, d, meta, m["t"] + 2, [f"topic hunt ({m['topic']}): {m['why']}"], float(m["score"]), log)
+                made.append(c)
+            except Exception as e:
+                log(f"  could not cut {fmt_t(m['t'])}: {str(e)[:80]}")
+    log(f"topic hunt made {len(made)} candidates")
+    return made
 
 
 def find(src, top=None, log=print):

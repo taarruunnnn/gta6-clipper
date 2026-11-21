@@ -208,6 +208,8 @@ def learn_and_guard(st, log):
     try:
         from .seo import research
         research(log=log)   # refresh keyword demand a few times a day
+        from .moments import hunt
+        hunt(log)           # new searched topics: look for them in streams we already transcribed
     except Exception as e:
         log(f"keyword research failed: {e}")
     for c in all_clips():
