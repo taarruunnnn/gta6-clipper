@@ -11,6 +11,7 @@
   publish <clip-id> [platforms..]  upload (same as the dashboard's Post button)
   youtube-login                    connect your YouTube channel (one time)
   keywords                         what people search for the game, ranked by views per upload today
+  topic-videos [--count N]         clip today's top video for each searched topic that has no clip yet (off by default)
   hunt                             look for searched topics (hidden places, glitches ...) in streams already transcribed
   topics                           the topic database: searched moments, demand, and our clips for each
   learn                            pull view counts for posted clips and report what is working
@@ -32,6 +33,7 @@ def main():
     p = sub.add_parser("radar"); p.add_argument("login"); p.add_argument("--week", action="store_true")
     p = sub.add_parser("streams"); p.add_argument("game", nargs="?", default="Grand Theft Auto VI")
     sub.add_parser("list"); sub.add_parser("learn"); sub.add_parser("youtube-login"); sub.add_parser("keywords"); sub.add_parser("topics"); sub.add_parser("hunt")
+    p = sub.add_parser("topic-videos"); p.add_argument("--count", type=int, default=3)
     p = sub.add_parser("cleanup"); p.add_argument("--dry-run", action="store_true")
     p = sub.add_parser("autostart"); p.add_argument("action", choices=["on", "off", "status"])
     p = sub.add_parser("set"); p.add_argument("id")
@@ -70,6 +72,14 @@ def main():
         from .cleanup import run
         run(dry=a.dry_run)
         return
+    if a.cmd == "topic-videos":
+        from . import auto
+        from .util import save_json
+        be_nice()
+        st = auto.state()
+        made = auto.topic_videos(st, print, a.count)
+        save_json(auto.STATE, st)
+        return print(f"{len(made)} candidates" if made or auto.cfg()["auto"].get("topic_videos") else "off: set topic_videos = true under [auto] in config.local.toml")
     if a.cmd == "hunt":
         from .moments import hunt
         be_nice()

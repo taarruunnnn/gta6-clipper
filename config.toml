@@ -106,6 +106,10 @@ seo_seed = "gta 6"          # the phrase titles are optimised around
 topic_seeds = ["hidden", "secret", "easter egg", "glitch", "location", "mission", "money", "car", "cheat", "how to"]
                             # themes the keyword research always explores, so searches like "hidden places" get tracked
 research_limit = 40         # search phrases measured per research run
+topic_videos = false        # also clip today's top VIDEO (not only streams) for each searched topic with no clip yet.
+                            # Those are other creators' edited videos: only switch this on if you are comfortable with that
+topic_videos_per_cycle = 1
+topic_min_views = 100000    # a topic video needs this many views
 languages = ["EN"]          # stream languages to clip; [] = any
 min_viewers = 1500
 blocklist = []              # creators never to clip
@@ -120,6 +124,7 @@ youtube_min_minutes = 20
 youtube_min_views = 5000
 clips_per_video = 3
 topics_per_cycle = 2        # searched moments with no clip yet that the loop goes looking for each cycle
+stall_minutes = 40          # if the loop logs nothing for this long it is stuck: it stops and the login service restarts it
 cycle_minutes = 20
 learn_hours = 6
 

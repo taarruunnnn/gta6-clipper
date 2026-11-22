@@ -25,7 +25,8 @@ def state():
 def notify(msg):
     print("NOTIFY:", msg)
     if sys.platform == "darwin":
-        subprocess.run(["osascript", "-e", f"display notification {json.dumps(msg)} with title \"Clipper\""], check=False)
+        subprocess.run(["osascript", "-e", "on run argv", "-e", 'display notification (item 1 of argv) with title "Clipper"',
+                        "-e", "end run", str(msg)], check=False, capture_output=True)
 
 
 def blocked(creator, st):
@@ -97,6 +98,7 @@ def from_youtube(st, log):
     for views, v in pool[:5]:
         url = f"https://www.youtube.com/watch?v={v['id']}"
         st["seen"].append(v["id"])
+        save_json(STATE, st)
         try:
             meta = sources.info(url)
             if A["youtube_streams_only"] and not meta.get("was_live"):
@@ -110,6 +112,63 @@ def from_youtube(st, log):
         except Exception as e:
             log(f"  could not process: {e}")
         return
+
+
+GAME_WORDS = {"gta", "6", "vi", "grand", "theft", "auto", "in", "the", "of", "to", "a", "for", "and", "all", "how"}
+
+
+def about(title, topic):
+    """Is this video's title about the searched topic? Every distinctive word of the search must be in the title
+    ("easter eggs" matches "Easter Egg"). Without this, the day's biggest stream wins every search."""
+    words = [w.rstrip("s") for w in re.findall(r"[a-z0-9]+", topic.lower()) if w not in GAME_WORDS]
+    have = {w.rstrip("s") for w in re.findall(r"[a-z0-9]+", (title or "").lower())}
+    return bool(words) and all(w in have for w in words)
+
+
+def topic_videos(st, log, count=None):
+    """For the most-searched topics we have no clip for, take today's most-viewed video on that exact search and look
+    inside it for the moment. Unlike stream discovery this includes edited videos, so it is off unless
+    [auto] topic_videos = true: those are another creator's finished work, and the credit matters even more."""
+    from . import topics
+    from .moments import find_topic
+    A, C = cfg()["auto"], cfg()["performance"]
+    if not A.get("topic_videos"):
+        return []
+    made, done, seen_words = [], 0, []
+    for topic, _ in topics.moments(only_open=True):
+        words = frozenset(topic.split())
+        if words in seen_words:                      # "money locations" and "locations for money" are one search
+            continue
+        seen_words.append(words)
+        if done >= (count or A.get("topic_videos_per_cycle", 1)):
+            break
+        try:
+            found = yt_search_today(topic, 25)
+        except Exception as e:
+            log(f"  search failed for {topic}: {str(e)[:60]}")
+            continue
+        pool = [v for v in found if v["id"] not in st["seen"] and (v.get("view_count") or 0) >= A.get("topic_min_views", 100000)
+                and about(v.get("title"), topic)
+                and 60 <= (v.get("duration") or 0) <= C["max_source_minutes"] * 60
+                and not blocked(v.get("channel") or v.get("uploader") or "", st)]
+        pool.sort(key=lambda v: -(v.get("view_count") or 0))
+        if not pool:
+            log(f"topic '{topic}': no video today with that in its title and enough views")
+        for v in pool[:3]:
+            url = f"https://www.youtube.com/watch?v={v['id']}"
+            st["seen"].append(v["id"])
+            save_json(STATE, st)
+            try:
+                lang = (sources.info(url).get("language") or "").split("-")[0].upper()
+                if A["languages"] and lang and lang not in A["languages"]:
+                    continue
+                log(f"topic '{topic}': {v.get('title')} ({v.get('view_count'):,} views)")
+                made += find_topic(url, topic, 2, log)
+                done += 1
+                break
+            except Exception as e:
+                log(f"  could not process: {str(e)[:100]}")
+    return made
 
 
 def watch_live(streams, st, log):
@@ -233,8 +292,8 @@ def cycle(log=print, live=True):
         log(f"twitch step failed: {e}")
     # Post first, and again after the quick sources: a long stream can take half an hour to analyse and must never
     # hold up a clip that is ready to go.
-    for step in (signin_guard, post_next, process_candidates, post_next, from_youtube, process_candidates, post_next,
-                 learn_and_guard, tidy):
+    for step in (signin_guard, post_next, process_candidates, post_next, topic_videos, process_candidates, post_next,
+                 from_youtube, process_candidates, post_next, learn_and_guard, tidy):
         save_json(STATE, st)   # survive a crash without re-clipping the same sources
         try:
             step(st, log)
@@ -252,14 +311,40 @@ def loop(once=False, live=True):
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except OSError:
         return print("the loop is already running; not starting a second one")
-    log = lambda m: print(f"{time.strftime('%m-%d %H:%M:%S')}  {m}", flush=True)
+    beat = [time.time()]          # time of the last sign of life; None while resting between cycles
+
+    def log(m):
+        beat[0] = time.time()
+        print(f"{time.strftime('%m-%d %H:%M:%S')}  {m}", flush=True)
+
+    def watchdog():
+        """A stuck download or transcription once froze the loop for hours. If nothing has been logged for
+        stall_minutes, stop with an error: the login service starts a fresh loop, and the source that hung is
+        already marked as seen, so it is not tried again."""
+        import os, threading
+        limit = cfg()["auto"].get("stall_minutes", 40) * 60
+
+        def check():
+            while True:
+                time.sleep(60)
+                if beat[0] and time.time() - beat[0] > limit:
+                    print(f"{time.strftime('%m-%d %H:%M:%S')}  no progress for {limit // 60} minutes: restarting the loop", flush=True)
+                    for p in watchers.values():
+                        p.terminate()
+                    os._exit(1)
+        threading.Thread(target=check, daemon=True).start()
+
+    if not once:
+        watchdog()
     try:
         while True:
             log("--- cycle ---")
             cycle(log, live and not once)
             if once:
                 break
+            beat[0] = None
             time.sleep(cfg()["auto"]["cycle_minutes"] * 60)
+            beat[0] = time.time()
     except KeyboardInterrupt:
         pass
     finally:

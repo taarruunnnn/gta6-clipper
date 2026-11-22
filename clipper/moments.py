@@ -6,7 +6,8 @@ Signals per second: YouTube "most replayed", Twitch viewer clips, chat rate, lou
 import time
 import numpy as np
 from . import sources
-from .transcribe import refine, transcribe, transcribe_long
+from . import transcribe as tr
+from .transcribe import refine, spoken_language, transcribe, transcribe_long, wrong_language
 from .util import cfg, fmt_t, is_url, job_dir, llm_json, load_json, next_clip_number, save_clip, save_json
 
 
@@ -121,6 +122,11 @@ def transcript_moments(audio, d, meta, log=print, focus=None):
     cache = d / "full_transcript.json"
     segs = load_json(cache)
     if segs is None:
+        lang = spoken_language(audio)
+        if wrong_language(lang):                 # the video's own language tag is often missing, so listen first
+            log(f"  skipped: the speech is {lang}, and this page posts in {', '.join(cfg()['auto']['languages'])}")
+            save_json(cache, [])
+            return []
         log("transcribing the whole stream (the slow part, once per stream)")
         segs = transcribe_long(audio, log)
         save_json(cache, segs)
@@ -181,6 +187,27 @@ def hunt(log=print, per_stream=4):
                 log(f"  could not cut {fmt_t(m['t'])}: {str(e)[:80]}")
     log(f"topic hunt made {len(made)} candidates")
     return made
+
+
+def find_topic(src, topic, top=2, log=print):
+    """Look inside one video for moments that show a specific searched topic (works for short videos too)."""
+    c = cfg()
+    d = job_dir(src)
+    meta = sources.info(src)
+    save_json(d / "info.json", meta)
+    log(f"{meta.get('title')}  ({meta.get('uploader')})")
+    audio = sources.fetch_audio(src, d, c["performance"]["max_source_minutes"], meta.get("duration"))
+    picks = sorted(transcript_moments(audio, d, meta, log, focus=[topic]), key=lambda m: -m["score"])
+    save_json(d / "hunted.json", load_json(d / "hunted.json", []) + [topic])
+    made, used = [], []
+    for m in picks:
+        if len(made) >= top or m["score"] < c["scoring"].get("scan_min_score", 6):
+            break
+        if any(abs(m["t"] - u) < c["clip"]["max_seconds"] for u in used):
+            continue
+        used.append(m["t"])
+        made.append(make_candidate(src, d, meta, m["t"] + 2, [f"topic video ({topic}): {m['why']}"], float(m["score"]), log))
+    return [m for m in made if m]
 
 
 def find(src, top=None, log=print):
@@ -252,6 +279,7 @@ def make_candidate(src, d, meta, peak, why, sc, log=print, section=None, sec_sta
         sec_start = max(0.0, peak - c["lead"] - pad)
         section = sources.fetch_section(src, sec_start, peak - c["lead"] + c["max_seconds"] + pad, cd / "src.mp4")
     words = transcribe(section)
+    heard = tr.last_language
     save_json(cd / "words.json", words)
     t_in, t_out = refine(words, peak - sec_start, section, c["min_seconds"], c["max_seconds"], c["lead"])
     t_in, t_out, quiet_run, quiet_share = trim_silence(section, t_in, t_out, c["min_seconds"])
@@ -263,6 +291,8 @@ def make_candidate(src, d, meta, peak, why, sc, log=print, section=None, sec_sta
     elif t_out - t_in < max(10, c["min_seconds"] - 5):
         dead = f"only {t_out - t_in:.0f} seconds are left once the silence is cut off"
     text = " ".join(x["w"] for x in words if t_in <= x["s"] < t_out)
+    if not dead and len(text.split()) >= 12 and wrong_language(heard):
+        dead = f"the speech is {heard}, not a language this page posts in"
     clip = {"id": f"{d.name}/{n}", "created": time.time(), "status": "candidate",
             "source": str(src), "source_title": meta.get("title") or "", "creator": meta.get("uploader") or meta.get("channel") or "",
             "at": round(sec_start + t_in, 1), "in": round(t_in, 2), "out": round(t_out, 2), "peak": round(peak - sec_start, 2),
@@ -271,7 +301,7 @@ def make_candidate(src, d, meta, peak, why, sc, log=print, section=None, sec_sta
             "layout": cfg()["layout"]["default"], "posts": {}}
     if dead:      # dead air never reaches the judge
         clip["status"] = "rejected"
-        clip["judge"] = {"score": 1, "reason": f"Dead air: {dead}.", "safe": True, "music": False}
+        clip["judge"] = {"score": 1, "reason": f"Not usable: {dead}.", "safe": True, "music": False}
     save_clip(clip)
     log(f"  #{n} at {fmt_t(clip['at'])} ({t_out - t_in:.0f}s, {', '.join(why)}): " + (f"dropped, {dead}" if dead else text[:90]))
     return clip

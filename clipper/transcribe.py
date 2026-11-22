@@ -7,6 +7,37 @@ from pathlib import Path
 from .util import cfg, duration, run
 
 
+last_language = ""   # language Whisper heard in the most recent transcribe() call ("en", "pt", ...)
+
+
+def spoken_language(media, samples=3):
+    """Which language is spoken, from a few 30-second samples spread across the file. Takes seconds, and saves
+    transcribing hours of a stream the page would never post. Returns "" when it cannot tell."""
+    try:
+        import mlx_whisper
+    except ImportError:
+        return ""
+    P, total, votes = cfg()["performance"], duration(media), []
+    with tempfile.TemporaryDirectory() as tmp:
+        for i in range(samples):
+            f = f"{tmp}/s{i}.flac"
+            run(["ffmpeg", "-v", "error", "-ss", f"{total * (i + 1) / (samples + 1):.0f}", "-t", "30", "-i", media,
+                 "-vn", "-ac", "1", "-ar", "16000", f], check=False)
+            try:
+                r = mlx_whisper.transcribe(f, path_or_hf_repo=P["whisper_model"], condition_on_previous_text=False, verbose=None)
+                if len(r.get("text", "").split()) >= 8:        # near-silent samples say nothing about the language
+                    votes.append(r.get("language") or "")
+            except Exception:
+                pass
+    return max(set(votes), key=votes.count).upper() if votes else ""
+
+
+def wrong_language(lang):
+    """True when a detected language is known and is not one the page posts in."""
+    allowed = [a.upper() for a in cfg()["auto"].get("languages", [])]
+    return bool(allowed and lang and lang.upper() not in allowed)
+
+
 def transcribe(media):
     """Word timestamps. Apple Silicon: MLX on the GPU. Elsewhere: faster-whisper on an NVIDIA GPU or the CPU."""
     P = cfg()["performance"]
@@ -16,6 +47,8 @@ def transcribe(media):
         return _faster_whisper(media, P.get("whisper_model_other", "small"))
     r = mlx_whisper.transcribe(str(media), path_or_hf_repo=P["whisper_model"],
                                word_timestamps=True, condition_on_previous_text=False, verbose=None)
+    global last_language
+    last_language = (r.get("language") or "").upper()
     words = []
     for seg in r.get("segments", []):
         for w in seg.get("words", []):

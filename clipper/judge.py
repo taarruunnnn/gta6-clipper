@@ -20,6 +20,7 @@ Speech: {speech}
 {seo}
 {topics}
 
+{focus}
 Score 1-10 as a standalone short for someone who has never seen the stream:
 - 8-10: clear setup and payoff, something visibly happens, strong reaction, understandable with no context.
 - 5-7: fine but ordinary.
@@ -48,6 +49,21 @@ Reply with ONLY a JSON object:
                  titles and caption must use that topic phrase."}}"""
 
 
+FOCUS = """This clip was picked to answer a search: people are typing "{topic}" into YouTube right now.
+For this clip the question is whether someone who searched that would be satisfied, not how loud the reaction is:
+- 8-10: the frames and speech clearly show or explain "{topic}", a viewer learns or sees the thing itself, and it
+  makes sense with no context. A calm clip can score here.
+- 5-7: it is about the topic but only shows part of it, or it takes too long to get there.
+- 1-4: the topic is only mentioned in passing, the screen is dark or a menu, or it needs the rest of the video.
+The silence and safety rules below still apply. If it does show the topic, set "topic" to exactly "{topic}"."""
+
+
+def picked_topic(clip):
+    """The searched topic a clip was cut for, if it came from a topic search."""
+    m = re.search(r"topic (?:video|hunt) \(([^)]+)\)", " ".join(clip.get("why", [])))
+    return m.group(1) if m else ""
+
+
 def retitle(clip_id):
     """New title for an already-judged clip, without the streamer's name."""
     clip = load_clip(clip_id)
@@ -72,6 +88,9 @@ def judge(clip_id, log=print):
     for i, t in enumerate((clip["in"] + 0.12 * L, min(clip["out"] - 0.5, max(clip["in"] + 0.5, clip["peak"])), clip["out"] - 0.1 * L), 1):
         run(["ffmpeg", "-y", "-v", "error", "-ss", f"{t:.2f}", "-i", d / "src.mp4", "-frames:v", "1", "-vf", "scale=640:-2", d / f"j{i}.jpg"], check=False)
     open_topics = [p for p, _ in topics.moments()[:25]]
+    wanted = picked_topic(clip)
+    if wanted and wanted not in open_topics:
+        open_topics.append(wanted)
     topic_brief = "SEARCHED TOPICS (moments people are looking for right now): " + ("; ".join(open_topics) or "none yet")
     used = [c["hook"] for c in all_clips() if c.get("hook") and c["id"] != clip_id][:14]
     recent = ("Hooks this page used recently: " + "; ".join(f'"{h}"' for h in used) +
@@ -84,7 +103,7 @@ def judge(clip_id, log=print):
             gaps.append(f"{prev - clip['in']:.0f}-{w['s'] - clip['in']:.0f}s")
         prev = w["e"]
     speech = f"{len(said)} words spoken" + (f"; nobody speaks during {', '.join(gaps)}" if gaps else "; speech throughout")
-    prompt = PROMPT.format(recent=recent, speech=speech, secs=L, text=clip["text"][:1500], creator=clip.get("creator", ""), title=clip.get("source_title", ""),
+    prompt = PROMPT.format(focus=FOCUS.format(topic=wanted) if wanted else "", recent=recent, speech=speech, secs=L, text=clip["text"][:1500], creator=clip.get("creator", ""), title=clip.get("source_title", ""),
                            why=", ".join(clip.get("why", [])), learned=hook_examples(),
                            seo=seo.brief(clip.get("creator", "")), topics=topic_brief,
                            langs=", ".join(cfg()["auto"]["languages"]) or "any")
