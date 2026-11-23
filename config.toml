@@ -14,6 +14,7 @@ hook_size = 76
 mask_profanity = true       # f*ck instead of the full word (keeps clips monetisable)
 motion = true               # true: animated hook, popping captions, commentary beats (Remotion). false: classic still text
 sound_effects = true        # motion style only: every piece of text arrives with a sound
+ask = true                  # motion style: a closing on-screen line that invites a comment, a share or a like
 progress_bar = true         # thin retention bar along the bottom
 punch_zoom = 0.10           # zoom-in at the peak moment (0 = off)
 
@@ -27,9 +28,11 @@ stack_cam = [0.0, 0.0, 0.25, 0.25]   # facecam rectangle in the source as fracti
 
 [clip]
 top = 6                     # candidates per video
-min_seconds = 15
-max_seconds = 35
-lead = 12                   # seconds kept before the peak (the build-up)
+min_seconds = 22
+max_seconds = 45
+lead = 18                   # seconds kept before the peak (the build-up)
+tail = 14                   # seconds kept after it (the reaction). lead + tail is the usual clip length: the streamer
+                            # clips that go viral run about 35 seconds, long enough for a setup
 silence_db = -45            # a second quieter than this counts as silent
 max_silence_seconds = 3     # silence at the ends is trimmed; a clip with this much silence in the middle is dropped
 
@@ -103,6 +106,8 @@ min_score = 7               # judge score (1-10) a clip needs to be rendered and
 max_age_hours = 48          # older clips are stale and are not posted
 game = "Grand Theft Auto VI"   # the game, exactly as Twitch names its category
 seo_seed = "gta 6"          # the phrase titles are optimised around
+title_style = "name"        # name: streamer first, one plain sentence ("CaseOh Gets Chased by a Gator in GTA 6 😭"), the way
+                            # viral clip channels title | search: keyword first, no streamer name
 topic_seeds = ["hidden", "secret", "easter egg", "glitch", "location", "mission", "money", "car", "cheat", "how to"]
                             # themes the keyword research always explores, so searches like "hidden places" get tracked
 research_limit = 40         # search phrases measured per research run

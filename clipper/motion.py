@@ -27,6 +27,9 @@ def beats(clip, length, vo):
         out.append({"kind": "watch", "text": clip["peak_text"], "start": round(pk - 2.2, 2), "end": round(pk + 0.1, 2)})
     if clip.get("payoff_text") and pk + 0.9 < length - 1.2:
         out.append({"kind": "payoff", "text": clip["payoff_text"], "start": round(pk + 0.9, 2), "end": round(min(length - 0.2, pk + 3.4), 2)})
+    ask = max(pk + 1.2, length - 3.0)     # the closing line that asks for a comment, a share or a like; the top pill is free by then
+    if cfg()["brand"].get("ask", True) and clip.get("ask") and length - ask >= 1.5:
+        out.append({"kind": "ask", "text": clip["ask"], "start": round(ask, 2), "end": round(length - 0.05, 2)})
     return out
 
 

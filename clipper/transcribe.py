@@ -104,7 +104,7 @@ def _faster_segments(media, size):
     return [(s.start, s.text) for s in segs]
 
 
-def refine(words, peak, media, min_len, max_len, lead):
+def refine(words, peak, media, min_len, max_len, lead, tail=8):
     """Start on the first word of a sentence, end on a finished one, keep the peak inside."""
     total = duration(media)
     want_in = max(0.0, peak - lead)
@@ -122,5 +122,5 @@ def refine(words, peak, media, min_len, max_len, lead):
     t_in = max(0.0, min(ok, key=lambda s: abs(s - want_in)) - 0.15)
     lo, hi = max(t_in + min_len, peak + 3), t_in + max_len
     ok = [e for e in ends if lo <= e <= hi]
-    t_out = (min(ok, key=lambda e: abs(e - (peak + 8))) + 0.35) if ok else min(hi, max(lo, peak + 8))
+    t_out = (min(ok, key=lambda e: abs(e - (peak + tail))) + 0.35) if ok else min(hi, max(lo, peak + tail))
     return round(t_in, 2), round(min(total, t_out), 2)

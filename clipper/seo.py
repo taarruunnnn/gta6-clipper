@@ -77,16 +77,48 @@ def brief(creator):
     return "\n".join(out) + own_titles()
 
 
+SUFFIX = re.compile(r"(?i)[\s_]*(live|tv|ttv|gaming|plays|clips|two|more|hd|yt|official)$")
+
+
+def short_name(creator):
+    """The name viewers use: 'Kai Cenat Live' -> 'Kai Cenat', 'caseoh_' -> 'caseoh', 'ZerkaaPlays' -> 'Zerkaa'."""
+    n = (creator or "").strip().strip("_")
+    while True:
+        m = SUFFIX.sub("", n).strip().strip("_")
+        if m == n or len(m) < 3:
+            return n
+        n = m
+
+
+def names(title, creator):
+    """0 = the streamer is not in the title, 1 = somewhere in it, 2 = the title opens with them.
+    Nicknames count when they are part of the handle: 'Speed' for IShowSpeed, 'Kai' for Kai Cenat."""
+    squash = lambda x: re.sub(r"[^a-z0-9]", "", x.lower())
+    who = squash(short_name(creator))
+    if len(who) < 3:
+        return 0
+    first = squash(re.sub(r"'s$", "", (title.split() or [""])[0]))
+    if squash(title).startswith(who) or (len(first) >= 3 and first in who):
+        return 2
+    return 1 if who in squash(title) else 0
+
+
 def score_title(title, creator="", topic=""):
     """Rule-based ranking score. Higher is better."""
     m, t, s = market(), title.lower(), 0.0
     game_words = cfg()["auto"]["seo_seed"].lower().split()
+    by_name = cfg()["auto"].get("title_style", "name") == "name"
     if all(w in t for w in game_words):
         s += 3                                             # the game name must be findable
-        if t.find(game_words[0]) < 25:
+        if not by_name and t.find(game_words[0]) < 25:
             s += 1                                         # ... and early: titles get cut off in the feed
-    if creator and any(n in t for n in {creator.lower(), creator.lower().strip("_"), creator.lower().replace(" ", "")} if len(n) > 2):
-        s -= 4                                             # the streamer is credited on the video, not in the title
+    named = names(title, creator)
+    if by_name:                                            # how the clips that go viral are titled: "<Name> does X in GTA 6"
+        s += (0, 3, 4)[named]
+        if re.match(r"[^:]{0,32}:", title):
+            s -= 2                                         # a keyword label in front ("GTA 6 Gameplay: ...") reads like a robot
+    elif named:
+        s -= 4                                             # search style: the streamer is credited on the video, not in the title
     s += min(3, sum(1 for w in m["terms"] if w in t))      # words the current winners share
     for phrase in top_keywords(8) + m["suggestions"]:      # overlap with a real search phrase, best opportunities first
         extra = [w for w in phrase.lower().split() if w not in game_words and len(w) > 2]
@@ -108,11 +140,13 @@ def pick_title(options, creator="", topic=""):
     return max(options, key=lambda o: score_title(o, creator, topic)) if options else ""
 
 
-def hashtags(tags):
-    """Always carry the game and #shorts; cap at 5 (YouTube ignores all hashtags past 15 and 3-5 reads clean)."""
+def hashtags(tags, creator=""):
+    """Always carry the streamer, the game and #shorts; cap at 5 (YouTube ignores all hashtags past 15 and 3-5 reads clean)."""
     seed = "#" + cfg()["auto"]["seo_seed"].replace(" ", "").lower()
+    who = re.sub(r"[^a-z0-9]", "", short_name(creator).lower())
+    lead = (["#" + who] if len(who) >= 3 else []) + [seed, "#shorts"]
     have = [h if h.startswith("#") else "#" + h for h in tags.split()]
-    out = list(dict.fromkeys([seed, "#shorts"] + [h for h in have if h.lower() not in (seed, "#shorts")]))
+    out = list(dict.fromkeys(lead + [h for h in have if h.lower() not in lead]))
     return " ".join(out[:5])
 
 

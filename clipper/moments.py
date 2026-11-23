@@ -286,7 +286,7 @@ def make_candidate(src, d, meta, peak, why, sc, log=print, section=None, sec_sta
     words = transcribe(section)
     heard = tr.last_language
     save_json(cd / "words.json", words)
-    t_in, t_out = refine(words, peak - sec_start, section, c["min_seconds"], c["max_seconds"], c["lead"])
+    t_in, t_out = refine(words, peak - sec_start, section, c["min_seconds"], c["max_seconds"], c["lead"], c.get("tail", 8))
     t_in, t_out, quiet_run, quiet_share = trim_silence(section, t_in, t_out, c["min_seconds"])
     dead = ""
     if quiet_run >= c.get("max_silence_seconds", 3):

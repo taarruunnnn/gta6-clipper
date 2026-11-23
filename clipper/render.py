@@ -112,7 +112,7 @@ def render(clip_id, log=print, use_motion=None, out_name="out.mp4"):
             add(fx["whoosh"], 0.0, 0.5)                       # hook punches in
             add(fx["hit"], max(0.0, pk - 0.03), 0.6)          # the moment itself
             for b in motion.beats(clip, length, vo):          # each piece of commentary text lands with a sound
-                add(fx["pop" if b["kind"] == "watch" else "slam"], b["start"], 0.7)
+                add(fx["slam" if b["kind"] == "payoff" else "pop"], b["start"], 0.7)
         text_layer = ["-i", motion.build(clip, words, d, length, vo, voices)]
     else:
         text_layer = ["-f", "concat", "-safe", "0", "-i", overlay.build(clip, words, d / "overlay")]

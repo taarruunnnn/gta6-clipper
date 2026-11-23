@@ -61,8 +61,8 @@ Every part is there for a reason: the **hook** stops the swipe, the **watch cue*
 |---|---|
 | 🔎 **Finds moments** | Today's most-viewed viewer clips on Twitch, live streams (cuts when chat explodes), and finished YouTube streams |
 | 🧠 **Picks only good ones** | An AI judge looks at frames and the transcript, scores each clip 1-10 and throws out the dull, the unsafe and the wrong-language ones |
-| ✂️ **Edits** | Vertical 1080x1920 with hook, animated word-by-word captions, emojis, zoom on the peak, narrator and sound effects |
-| 🏷️ **Writes titles that get found** | Pulls what people are searching on YouTube right now and picks the title by a scoring rule, not by taste |
+| ✂️ **Edits** | Vertical 1080x1920 with hook, animated word-by-word captions, emojis, zoom on the peak, narrator, sound effects and a closing line that asks for a comment, a share or a like |
+| 🏷️ **Writes titles that get found** | Streamer first, one plain sentence, the way viral clip channels title ("CaseOh Gets Chased by a Gator in GTA 6 😭"), with today's YouTube searches in front of it; the winner is picked by a scoring rule, not by taste |
 | 🚀 **Posts** | Straight to your YouTube channel through your own free Google project |
 | 📈 **Learns** | Reads view counts back and feeds your best hooks and titles into the next ones |
 
@@ -168,6 +168,7 @@ accent = "#FFD400"               # hook box and highlight colour
 [auto]
 game = "Grand Theft Auto VI"     # exactly as Twitch names the category
 seo_seed = "gta 6"               # the phrase titles are built around
+title_style = "name"             # streamer first; "search" = keyword first, no streamer name
 mode = "auto"                    # post without asking
 daily_cap = 4                    # posts per day
 
