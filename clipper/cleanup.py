@@ -4,7 +4,7 @@ Footage is the heavy part; the small clip.json records are always kept, because 
 re-clipping the same moment and what the learning report reads.
   - rejected / discarded clips: footage deleted after [cleanup] rejected_hours
   - clips that were kept but never posted and are now stale: same
-  - posted clips: source and working files deleted straight away, the finished video after published_days
+  - posted clips: source and working files deleted straight away, the finished video after published_days (0 = right after the upload)
   - downloaded stream audio and chat: deleted after source_hours; orphaned live-recording buffers after 20 minutes
 """
 import shutil, time

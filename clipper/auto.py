@@ -94,6 +94,26 @@ def from_youtube(st, log):
             if (v["id"] not in st["seen"] and not blocked(who, st) and views >= A["youtube_min_views"]
                     and A["youtube_min_minutes"] * 60 <= dur <= C["max_source_minutes"] * 60):
                 pool.append((views, v))
+    # Creators on the watchlist: a few per cycle, in turn. Their own channel only (never a fan re-upload), and a
+    # lower view bar than the open search, because we already know the streamer draws a crowd.
+    names, plain = A.get("creators", []), lambda t: re.sub(r"[^a-z0-9]", "", (t or "").lower())
+    start = st.get("creator_cursor", 0) % max(1, len(names))
+    turn = (names[start:] + names[:start])[:A.get("creators_per_cycle", 4)]
+    st["creator_cursor"] = start + len(turn)
+    for name in turn:
+        try:
+            found = yt_search_today(A.get("creator_query", "{name} gta 6").format(name=name), 10)
+        except Exception as e:
+            log(f"  search failed for {name}: {str(e)[:60]}")
+            continue
+        for v in found:
+            dur, views = v.get("duration") or 0, v.get("view_count") or 0
+            if (plain(v.get("channel") or v.get("uploader")) == plain(name) and v["id"] not in st["seen"] and not blocked(name, st)
+                    and views >= A.get("creator_min_views", 100000)
+                    and A["youtube_min_minutes"] * 60 <= dur <= C["max_source_minutes"] * 60):
+                pool.append((views, v))
+    if turn:
+        log("watchlist checked: " + ", ".join(turn))
     pool.sort(key=lambda x: -x[0])
     for views, v in pool[:5]:
         url = f"https://www.youtube.com/watch?v={v['id']}"
@@ -226,6 +246,9 @@ def post_next(st, log):
     if any(v.get("ok") for v in c.get("posts", {}).values()):
         st["posted"].append(now)
         notify(f"Posted: {c.get('hook')}")
+        if cfg().get("cleanup", {}).get("published_days", 7) <= 0:    # delete the local copy as soon as it is up
+            from .cleanup import run as clean
+            clean(log=log)
     elif re.search(r"invalid_grant|sign-in|signed in|expired|revoked", str(c.get("posts")) + result, re.I):
         c["posts"] = {}          # not the clip's fault: keep it queued and ask for a new sign-in
         save_clip(c)

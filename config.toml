@@ -120,6 +120,10 @@ live_watchers = 2           # streams watched live for chat spikes at the same t
 live_minutes = 60
 youtube_queries = ["gta 6 full stream", "gta 6 gameplay live"]
 youtube_streams_only = true # only finished live streams, never edited uploads
+creators = []               # watchlist: YouTube channel names to check directly, e.g. ["Typical Gamer", "jacksepticeye"]
+creators_per_cycle = 4      # how many of them to look up each cycle, in turn
+creator_min_views = 100000  # a watchlist creator's stream needs this many views (lower than youtube_min_views)
+creator_query = "{name} gta 6"   # what to search for each creator
 youtube_min_minutes = 20
 youtube_min_views = 5000
 clips_per_video = 3
@@ -135,5 +139,5 @@ command = ["claude", "-p", "{prompt}", "--model", "{model}", "--allowedTools", "
 [cleanup]                   # the loop frees disk space by itself; the small clip records are always kept
 every_hours = 6
 rejected_hours = 1          # footage of rejected clips is deleted after this
-published_days = 7          # finished videos of posted clips are kept this long
+published_days = 7          # finished videos of posted clips are kept this long; 0 = delete right after the upload
 source_hours = 2            # downloaded stream audio and chat, once the moments have been taken from them

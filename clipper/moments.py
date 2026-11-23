@@ -173,9 +173,9 @@ def hunt(log=print, per_stream=4):
         log(f"hunting {len(todo)} topics in: {(meta.get('title') or '')[:60]}")
         picks = sorted(transcript_moments(None, d, meta, log, focus=todo), key=lambda m: -m["score"])
         save_json(d / "hunted.json", asked + todo)
-        used = []
+        used, before = taken(d, url), len(taken(d, url))
         for m in picks:
-            if len(used) >= per_stream or m["score"] < cfg()["scoring"].get("scan_min_score", 6):
+            if len(used) - before >= per_stream or m["score"] < cfg()["scoring"].get("scan_min_score", 6):
                 break
             if any(abs(m["t"] - u) < cfg()["clip"]["max_seconds"] for u in used):
                 continue
@@ -189,6 +189,11 @@ def hunt(log=print, per_stream=4):
     return made
 
 
+def taken(d, src):
+    """Stream times already cut from this source, so a later search for another topic does not cut the same moment again."""
+    return [c["at"] for c in (load_json(f) for f in d.glob("clips/*/clip.json")) if c and c.get("source") == str(src)]
+
+
 def find_topic(src, topic, top=2, log=print):
     """Look inside one video for moments that show a specific searched topic (works for short videos too)."""
     c = cfg()
@@ -199,7 +204,7 @@ def find_topic(src, topic, top=2, log=print):
     audio = sources.fetch_audio(src, d, c["performance"]["max_source_minutes"], meta.get("duration"))
     picks = sorted(transcript_moments(audio, d, meta, log, focus=[topic]), key=lambda m: -m["score"])
     save_json(d / "hunted.json", load_json(d / "hunted.json", []) + [topic])
-    made, used = [], []
+    made, used = [], taken(d, src)
     for m in picks:
         if len(made) >= top or m["score"] < c["scoring"].get("scan_min_score", 6):
             break
