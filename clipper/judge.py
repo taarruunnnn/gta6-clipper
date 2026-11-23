@@ -27,6 +27,8 @@ Score 1-10 as a standalone short for someone who has never seen the stream:
 - A clip where nobody speaks for most of its length needs strong visible action to score above 5.
 - 1-4: no payoff, mostly silence or idle chatter, menus/loading/"be right back" screens, or needs context.
 The page posts in these languages only: {langs}. If the speech is in another language, score it 1.
+The page posts {game} only. If the frames or the source title show a different game (an older game in the same
+series counts as different), score it 1.
 Set "safe" to false (and it will never be posted) if it contains slurs, hate, sexual content, harassment of a
 real person, someone's private information, or anything that would embarrass the page.
 
@@ -134,7 +136,7 @@ def judge(clip_id, log=print):
     prompt = PROMPT.format(focus=FOCUS.format(topic=wanted) if wanted else "", recent=recent, speech=speech, secs=L, text=clip["text"][:1500], creator=clip.get("creator", ""), title=clip.get("source_title", ""),
                            why=", ".join(clip.get("why", [])), learned=hook_examples(), title_rule=title_rule(clip.get("creator", "")), ask_rule=ASK,
                            seo=seo.brief(clip.get("creator", "")), topics=topic_brief,
-                           langs=", ".join(cfg()["auto"]["languages"]) or "any")
+                           langs=", ".join(cfg()["auto"]["languages"]) or "any", game=cfg()["auto"]["game"])
     j = llm_json(prompt, cwd=d)
     clip = load_clip(clip_id)
     music = bool(re.search(r"[♪♫]|\[music\]", clip["text"], re.I))   # music-heavy audio is what gets auto-claimed

@@ -106,6 +106,8 @@ min_score = 7               # judge score (1-10) a clip needs to be rendered and
 max_age_hours = 48          # older clips are stale and are not posted
 game = "Grand Theft Auto VI"   # the game, exactly as Twitch names its category
 seo_seed = "gta 6"          # the phrase titles are optimised around
+not_game = ["gta online", "fivem", "san andreas"]   # a title with one of these is another game. A different number in
+                            # the series ("GTA 5" when seo_seed is "gta 6") is caught without listing it
 title_style = "name"        # name: streamer first, one plain sentence ("CaseOh Gets Chased by a Gator in GTA 6 😭"), the way
                             # viral clip channels title | search: keyword first, no streamer name
 topic_seeds = ["hidden", "secret", "easter egg", "glitch", "location", "mission", "money", "car", "cheat", "how to"]

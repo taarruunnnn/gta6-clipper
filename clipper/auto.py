@@ -92,6 +92,7 @@ def from_youtube(st, log):
             dur, views = v.get("duration") or 0, v.get("view_count") or 0
             who = v.get("channel") or v.get("uploader") or ""
             if (v["id"] not in st["seen"] and not blocked(who, st) and views >= A["youtube_min_views"]
+                    and which_game(v.get("title")) != "no"
                     and A["youtube_min_minutes"] * 60 <= dur <= C["max_source_minutes"] * 60):
                 pool.append((views, v))
     # Creators on the watchlist: a few per cycle, in turn. Their own channel only (never a fan re-upload), and a
@@ -109,7 +110,7 @@ def from_youtube(st, log):
         for v in found:
             dur, views = v.get("duration") or 0, v.get("view_count") or 0
             if (plain(v.get("channel") or v.get("uploader")) == plain(name) and v["id"] not in st["seen"] and not blocked(name, st)
-                    and views >= A.get("creator_min_views", 100000)
+                    and views >= A.get("creator_min_views", 100000) and which_game(v.get("title")) != "no"
                     and A["youtube_min_minutes"] * 60 <= dur <= C["max_source_minutes"] * 60):
                 pool.append((views, v))
     if turn:
@@ -127,11 +128,48 @@ def from_youtube(st, log):
             if A["languages"] and lang and lang not in A["languages"]:
                 log(f"  skipped (language {lang}): {v.get('title')}")
                 continue
+            title = meta.get("title") or v.get("title")
+            if which_game(title) == "no" or (which_game(title) == "maybe" and which_game(title, (meta.get("tags") or []) + [meta.get("description") or ""]) == "no"):
+                log(f"  skipped (not {A['seo_seed']}): {title}")
+                continue
             log(f"youtube: {v.get('title')} ({views:,} views)")
             find(url, top=A["clips_per_video"], log=log)
         except Exception as e:
             log(f"  could not process: {e}")
         return
+
+
+ROMAN = {"ii": "2", "iii": "3", "iv": "4", "v": "5", "vi": "6", "vii": "7", "viii": "8", "ix": "9"}
+
+
+def _plain(text):
+    """Lower-case words, roman numerals as digits and "gta6" split into "gta 6", so every spelling compares equal."""
+    t = re.sub(r"([a-z])(\d)", r"\1 \2", (text or "").lower())
+    return " ".join(ROMAN.get(w, w) for w in re.findall(r"[a-z0-9]+", t))
+
+
+def which_game(title, tags=None):
+    """Is this video our game? "yes" = it names it, "no" = it names another one, "maybe" = it names neither.
+    Another one = a different number in the same series ("GTA 5" when we clip GTA 6) or a phrase in [auto] not_game.
+    Hashtags in a title do not count: streams of the old game add the new one's tag to ride its searches. When the
+    title alone says nothing, pass the video's tags and its hashtags are counted with them."""
+    A = cfg()["auto"]
+    ours = {_plain(A["seo_seed"]), _plain(A["game"])} - {""}
+    raw = (re.sub(r"#\S+", " ", title or "") if tags is None else f"{title} {' '.join(tags)}").lower()
+    for head in {n.split()[0] for n in ours}:          # "GTAVI" and "gtav" are written as one word
+        raw = re.sub(rf"\b{re.escape(head)}({'|'.join(ROMAN)})\b", rf"{head} \1", raw)
+    text = _plain(raw)
+    mine = [m.start() for n in ours for m in re.finditer(rf"\b{re.escape(n)}\b", text)]
+    other = [m.start() for p in A.get("not_game", []) if _plain(p) for m in re.finditer(rf"\b{re.escape(_plain(p))}\b", text)]
+    for n in ours:
+        head, _, num = n.rpartition(" ")
+        if head and num.isdigit():
+            other += [m.start() for m in re.finditer(rf"\b{re.escape(head)} (\d{{1,2}})\b(?! ?fps)", text) if m.group(1) != num]
+    if tags is None:                                   # a title: whichever game it names first is what the stream is
+        if other and (not mine or min(other) < min(mine)):
+            return "no"
+        return "yes" if mine else "maybe"
+    return "yes" if mine and len(mine) >= len(other) else "no"
 
 
 GAME_WORDS = {"gta", "6", "vi", "grand", "theft", "auto", "in", "the", "of", "to", "a", "for", "and", "all", "how"}
@@ -168,7 +206,7 @@ def topic_videos(st, log, count=None):
             log(f"  search failed for {topic}: {str(e)[:60]}")
             continue
         pool = [v for v in found if v["id"] not in st["seen"] and (v.get("view_count") or 0) >= A.get("topic_min_views", 100000)
-                and about(v.get("title"), topic)
+                and about(v.get("title"), topic) and which_game(v.get("title")) != "no"
                 and 60 <= (v.get("duration") or 0) <= C["max_source_minutes"] * 60
                 and not blocked(v.get("channel") or v.get("uploader") or "", st)]
         pool.sort(key=lambda v: -(v.get("view_count") or 0))

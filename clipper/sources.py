@@ -13,8 +13,8 @@ def info(src):
         return {"title": Path(src).stem, "webpage_url": str(src), "uploader": ""}
     j = json.loads(ytdlp("-J", src, capture=True).stdout)
     keep = ("id", "title", "uploader", "uploader_id", "channel", "webpage_url", "duration", "view_count",
-            "heatmap", "is_live", "was_live", "extractor_key", "timestamp", "language")
-    return {k: j.get(k) for k in keep}
+            "heatmap", "is_live", "was_live", "extractor_key", "timestamp", "language", "tags")
+    return {**{k: j.get(k) for k in keep}, "description": (j.get("description") or "")[:600]}   # tags + description: which game it is
 
 
 def fetch_audio(src, d, max_minutes, dur=None):
